@@ -1,6 +1,5 @@
 package camiloo.com.example.volleyvision
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -15,9 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import camiloo.com.example.volleyvision.ui.theme.*
@@ -25,9 +22,10 @@ import camiloo.com.example.volleyvision.ui.theme.*
 @Composable
 fun HomeScreen(
     clubName: String = "CV OLÍMPICO",
+    matchesList: List<MatchEvent> = emptyList(),
+    playerList: List<PlayerMember> = emptyList(),
     onNavigateToNewMatch: () -> Unit = {}
 ) {
-    val context = LocalContext.current
     var selectedTab by remember { mutableStateOf(0) }
 
     Scaffold(
@@ -65,7 +63,7 @@ fun HomeScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 1. Cabecera Top Bar
+            // Cabecera Top Bar
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -111,162 +109,147 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 2. Tarjeta del Club
+            when (selectedTab) {
+                0 -> CoachHomeTab(clubName = clubName, matchesList = matchesList, onNavigateToNewMatch = onNavigateToNewMatch)
+                2 -> CoachTacticsTab()
+                3 -> CoachStatsTab()
+                4 -> CoachClubTab(clubName = clubName, playerList = playerList)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+fun CoachHomeTab(clubName: String, matchesList: List<MatchEvent>, onNavigateToNewMatch: () -> Unit) {
+    Column {
+        Surface(
+            color = NeonGreen,
+            shape = RoundedCornerShape(20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onNavigateToNewMatch() }
+        ) {
+            Row(
+                modifier = Modifier.padding(20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("+ NUEVO PARTIDO", color = BgMain, fontSize = 22.sp, fontWeight = FontWeight.Black)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        "Agenda o inicia un partido para tu equipo",
+                        color = BgMain.copy(alpha = 0.85f),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text("PRÓXIMOS PARTIDOS AGENDADOS", color = TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(8.dp))
+
+        if (matchesList.isEmpty()) {
             Surface(
                 color = CardBg,
                 shape = RoundedCornerShape(16.dp),
                 border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier.padding(18.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Text(
+                    "No hay partidos agendados aún. Presiona '+ NUEVO PARTIDO' para agendar uno.",
+                    color = TextGray,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        } else {
+            matchesList.forEach { match ->
+                Surface(
+                    color = CardBg,
+                    shape = RoundedCornerShape(16.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 12.dp)
                 ) {
-                    Column {
-                        Text(clubName, color = TextWhite, fontSize = 22.sp, fontWeight = FontWeight.Bold)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text("Liga Senior Regional • Grupo B", color = TextGray, fontSize = 13.sp)
-                    }
-
-                    Surface(
-                        color = ButtonDarkBg,
-                        shape = RoundedCornerShape(20.dp)
-                    ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(6.dp)
-                                    .clip(CircleShape)
-                                    .background(NeonGreen)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("24/25 ACTIVA", color = TextWhite, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text(match.matchType, color = NeonGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Text(match.date, color = TextGray, fontSize = 11.sp)
                         }
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // 3. Banner + NUEVO PARTIDO
-            Surface(
-                color = NeonGreen,
-                shape = RoundedCornerShape(20.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onNavigateToNewMatch() }
-            ) {
-                Row(
-                    modifier = Modifier.padding(20.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text("+ NUEVO PARTIDO", color = BgMain, fontSize = 22.sp, fontWeight = FontWeight.Black)
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text("$clubName vs ${match.rivalName}", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            "Configura rival y empieza a grabar o anotar en 1 toque",
-                            color = BgMain.copy(alpha = 0.85f),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(52.dp)
-                            .clip(CircleShape)
-                            .background(Color(0xFF008A44)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text("▶", color = TextWhite, fontSize = 20.sp)
+                        Text("📍 ${match.location}", color = TextGray, fontSize = 12.sp)
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // 4. ÚLTIMO PARTIDO REGISTRADO
-            Surface(
-                color = CardBg,
-                shape = RoundedCornerShape(20.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(18.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text("ÚLTIMO PARTIDO REGISTRADO", color = TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                        Surface(
-                            color = Color(0xFF00381B),
-                            shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text(
-                                "VICTORIA 3 - 1",
-                                color = NeonGreen,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Text("$clubName vs CV San José", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text("📍 Ayer • Pabellón Municipal", color = TextGray, fontSize = 12.sp)
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SetChip(score = "25–21")
-                        SetChip(score = "22–25")
-                        SetChip(score = "25–19")
-                        SetChip(score = "25–23")
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    HorizontalDivider(color = CardBorder, thickness = 1.dp)
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("📈 ", fontSize = 14.sp)
-                        Text("Eficacia de Ataque ", color = TextWhite, fontSize = 13.sp)
-                        Text("54%", color = NeonGreen, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                        Text(" • 14 Bloqueos", color = Color(0xFF64B5F6), fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(20.dp))
         }
     }
 }
 
 @Composable
-fun SetChip(score: String) {
-    Surface(
-        color = ButtonDarkBg,
-        shape = RoundedCornerShape(8.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
-    ) {
-        Text(
-            text = score,
-            color = TextWhite,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-        )
+fun CoachClubTab(clubName: String, playerList: List<PlayerMember>) {
+    Column {
+        Text("👥  PLANTILLA DEL CLUB", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text("Gestión de la nómina de jugadores de $clubName", color = TextGray, fontSize = 12.sp)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (playerList.isEmpty()) {
+            Surface(
+                color = CardBg,
+                shape = RoundedCornerShape(14.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    "No hay jugadores registrados aún en $clubName.",
+                    color = TextGray,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        } else {
+            playerList.forEach { player ->
+                PlayerListItem(dorsal = player.dorsal, name = player.name, position = player.position, isTitular = player.isTitular)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun CoachTacticsTab() {
+    Column {
+        Text("📐  PIZARRA TÁCTICA 2D", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(16.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(180.dp)
+                .background(Color(0xFF1B3B2B), shape = RoundedCornerShape(12.dp))
+                .border(2.dp, NeonGreen, shape = RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("SISTEMA 5-1 ACTIVO", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+fun CoachStatsTab() {
+    Column {
+        Text("📊  ESTADÍSTICAS DEL EQUIPO", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -287,10 +270,45 @@ fun NavItem(icon: String, label: String, isSelected: Boolean, onClick: () -> Uni
     }
 }
 
-@Preview(showBackground = true)
 @Composable
-fun HomeScreenPreview() {
-    VolleyVisionTheme {
-        HomeScreen()
+fun PlayerListItem(dorsal: String, name: String, position: String, isTitular: Boolean) {
+    Surface(
+        color = CardBg,
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(ButtonDarkBg)
+                        .border(1.dp, NeonGreen, CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(dorsal, color = NeonGreen, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Column {
+                    Text(name, color = TextWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                    Text(position, color = TextGray, fontSize = 11.sp)
+                }
+            }
+
+            if (isTitular) {
+                Surface(
+                    color = Color(0xFF00381B),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("REGISTRADO", color = NeonGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp))
+                }
+            }
+        }
     }
 }

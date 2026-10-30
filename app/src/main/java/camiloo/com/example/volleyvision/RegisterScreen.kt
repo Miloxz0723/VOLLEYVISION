@@ -28,7 +28,7 @@ import camiloo.com.example.volleyvision.ui.theme.*
 @Composable
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
-    onNavigateToHome: () -> Unit,
+    onRegisterSuccess: (String, String, String) -> Unit, // Envía: Nombre, Club y Rol
     onBackToWelcome: () -> Unit
 ) {
     var name by remember { mutableStateOf("") }
@@ -91,7 +91,7 @@ fun RegisterScreen(
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
-            label = { Text("Nombre Completo", color = TextGray) },
+            label = { Text("Nombre Completo") },
             singleLine = true,
             colors = textFieldColors,
             shape = RoundedCornerShape(12.dp),
@@ -100,11 +100,11 @@ fun RegisterScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Campo Nombre del Club / Equipo (NUEVO)
+        // Campo Nombre del Club / Equipo
         OutlinedTextField(
             value = clubName,
             onValueChange = { clubName = it },
-            label = { Text("Nombre del Club / Equipo", color = TextGray) },
+            label = { Text("Nombre del Club / Equipo") },
             placeholder = { Text("Ej. CV Olímpico", color = TextGray) },
             singleLine = true,
             colors = textFieldColors,
@@ -161,7 +161,7 @@ fun RegisterScreen(
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
-            label = { Text("Correo Electrónico", color = TextGray) },
+            label = { Text("Correo Electrónico") },
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             colors = textFieldColors,
@@ -175,7 +175,7 @@ fun RegisterScreen(
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = { Text("Contraseña", color = TextGray) },
+            label = { Text("Contraseña") },
             singleLine = true,
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -190,8 +190,8 @@ fun RegisterScreen(
         Button(
             onClick = {
                 if (name.isNotEmpty() && clubName.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()) {
-                    Toast.makeText(context, "Cuenta creada para $clubName ($role)", Toast.LENGTH_SHORT).show()
-                    onNavigateToHome()
+                    Toast.makeText(context, "Registro exitoso como $role", Toast.LENGTH_SHORT).show()
+                    onRegisterSuccess(name, clubName, role)
                 } else {
                     Toast.makeText(context, "Por favor completa todos los campos", Toast.LENGTH_SHORT).show()
                 }
@@ -228,9 +228,8 @@ fun RegisterScreenPreview() {
     VolleyVisionTheme {
         RegisterScreen(
             onNavigateToLogin = {},
-            onNavigateToHome = {},
+            onRegisterSuccess = { _, _, _ -> },
             onBackToWelcome = {}
         )
     }
 }
-
