@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "483861183571",
+    "project_id": "volleyvision-a5990",
+    "storage_bucket": "volleyvision-a5990.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:483861183571:android:3a815263bfdbde396a5aa6",
+        "android_client_info": {
+          "package_name": "camiloo.com.example.volleyvision"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCJGF-DJfCCGjGP3NJolRzdqYEcpaYiIMw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
