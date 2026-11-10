@@ -61,12 +61,18 @@ class MainActivity : ComponentActivity() {
                         onMatchCreated = { rival, date, loc, type ->
                             viewModel.addMatch(rival, date, loc, type)
                             currentRivalName = if (rival.isBlank()) "VISITANTE" else rival
-                            currentScreen = Screen.SCOREBOARD
+                            // Solución Punto 5: Vuelve a la Home al agendar partido
+                            currentScreen = Screen.HOME
                         }
                     )
                     Screen.SCOREBOARD -> ScoreboardScreen(
                         localTeamName = viewModel.clubName.value,
                         rivalName = currentRivalName,
+                        onNavigateToTactics = { currentScreen = Screen.HOME },
+                        onPointScoredByAction = { action ->
+                            // Asigna el punto al jugador ubicado en la zona correspondiente (P1 a P6)
+                            viewModel.recordPointForPlayerByAction(action)
+                        },
                         onFinishMatch = { homePoints, guestPoints, homeSets, guestSets, attackPts, blockPts, servePts ->
                             viewModel.finishCurrentMatch(
                                 homePoints, guestPoints, homeSets, guestSets,
