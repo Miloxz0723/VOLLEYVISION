@@ -6,11 +6,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import camiloo.com.example.volleyvision.ui.theme.VolleyVisionTheme
 
-enum class Screen { WELCOME, LOGIN, REGISTER, HOME, NEW_MATCH, PLAYER_HOME }
+enum class Screen { WELCOME, LOGIN, REGISTER, HOME, NEW_MATCH, SCOREBOARD, PLAYER_HOME }
 
 class MainActivity : ComponentActivity() {
 
@@ -20,7 +20,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             VolleyVisionTheme {
-                var currentScreen by remember { mutableStateOf(Screen.WELCOME) }
+                var currentScreen by rememberSaveable { mutableStateOf(Screen.WELCOME) }
+                var currentRivalName by rememberSaveable { mutableStateOf("RIVAL") }
 
                 when (currentScreen) {
                     Screen.WELCOME -> WelcomeScreen(
@@ -46,6 +47,12 @@ class MainActivity : ComponentActivity() {
                         clubName = viewModel.clubName.value,
                         matchesList = viewModel.matchesList,
                         playerList = viewModel.playerList,
+                        totalMatchesPlayed = viewModel.getFinishedMatchesCount(),
+                        winPercentage = viewModel.getWinPercentage(),
+                        attackEff = viewModel.getAverageAttackEfficiency(),
+                        serveEff = viewModel.getAverageServeEfficiency(),
+                        blockEff = viewModel.getAverageBlockEfficiency(),
+                        receptionEff = viewModel.getAverageReceptionEfficiency(),
                         onNavigateToNewMatch = { currentScreen = Screen.NEW_MATCH }
                     )
                     Screen.NEW_MATCH -> NewMatchScreen(
@@ -53,6 +60,18 @@ class MainActivity : ComponentActivity() {
                         onBackToHome = { currentScreen = Screen.HOME },
                         onMatchCreated = { rival, date, loc, type ->
                             viewModel.addMatch(rival, date, loc, type)
+                            currentRivalName = if (rival.isBlank()) "VISITANTE" else rival
+                            currentScreen = Screen.SCOREBOARD
+                        }
+                    )
+                    Screen.SCOREBOARD -> ScoreboardScreen(
+                        localTeamName = viewModel.clubName.value,
+                        rivalName = currentRivalName,
+                        onFinishMatch = { homePoints, guestPoints, homeSets, guestSets, attackPts, blockPts, servePts ->
+                            viewModel.finishCurrentMatch(
+                                homePoints, guestPoints, homeSets, guestSets,
+                                attackPts, blockPts, servePts
+                            )
                             currentScreen = Screen.HOME
                         }
                     )

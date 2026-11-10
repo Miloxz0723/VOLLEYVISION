@@ -30,9 +30,16 @@ fun HomeScreen(
     clubName: String = "CV OLÍMPICO",
     matchesList: List<MatchEvent> = emptyList(),
     playerList: List<PlayerMember> = emptyList(),
+    totalMatchesPlayed: Int = 0,
+    winPercentage: Int = 0,
+    attackEff: Float = 0f,
+    serveEff: Float = 0f,
+    blockEff: Float = 0f,
+    receptionEff: Float = 0f,
     onNavigateToNewMatch: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedMatchForDetails by remember { mutableStateOf<MatchEvent?>(null) }
 
     Scaffold(
         bottomBar = {
@@ -116,19 +123,45 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             when (selectedTab) {
-                0 -> CoachHomeTab(clubName = clubName, matchesList = matchesList, onNavigateToNewMatch = onNavigateToNewMatch)
+                0 -> CoachHomeTab(
+                    clubName = clubName,
+                    matchesList = matchesList,
+                    onNavigateToNewMatch = onNavigateToNewMatch,
+                    onMatchClick = { match -> selectedMatchForDetails = match }
+                )
                 2 -> CoachTacticsTab()
-                3 -> CoachStatsTab()
+                3 -> CoachStatsTab(
+                    matchesPlayed = totalMatchesPlayed,
+                    winRate = winPercentage,
+                    attackEff = attackEff,
+                    serveEff = serveEff,
+                    blockEff = blockEff,
+                    receptionEff = receptionEff
+                )
                 4 -> CoachClubTab(clubName = clubName, playerList = playerList)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
+
+    // Modal de Detalle del Partido
+    selectedMatchForDetails?.let { match ->
+        MatchDetailDialog(
+            match = match,
+            localClubName = clubName,
+            onDismiss = { selectedMatchForDetails = null }
+        )
+    }
 }
 
 @Composable
-fun CoachHomeTab(clubName: String, matchesList: List<MatchEvent>, onNavigateToNewMatch: () -> Unit) {
+fun CoachHomeTab(
+    clubName: String,
+    matchesList: List<MatchEvent>,
+    onNavigateToNewMatch: () -> Unit,
+    onMatchClick: (MatchEvent) -> Unit
+) {
     Column {
         Surface(
             color = NeonGreen,
@@ -157,7 +190,7 @@ fun CoachHomeTab(clubName: String, matchesList: List<MatchEvent>, onNavigateToNe
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        Text("PRÓXIMOS PARTIDOS AGENDADOS", color = TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text("HISTORIAL Y PARTIDOS AGENDADOS", color = TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
 
         if (matchesList.isEmpty()) {
@@ -168,7 +201,7 @@ fun CoachHomeTab(clubName: String, matchesList: List<MatchEvent>, onNavigateToNe
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
-                    "No hay partidos agendados aún. Presiona '+ NUEVO PARTIDO' para agendar uno.",
+                    "No hay partidos registrados aún. Presiona '+ NUEVO PARTIDO' para agendar uno.",
                     color = TextGray,
                     fontSize = 13.sp,
                     modifier = Modifier.padding(16.dp)
@@ -183,19 +216,32 @@ fun CoachHomeTab(clubName: String, matchesList: List<MatchEvent>, onNavigateToNe
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 12.dp)
+                        .clickable { onMatchClick(match) }
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(match.matchType, color = NeonGreen, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                            Text(match.date, color = TextGray, fontSize = 11.sp)
+                            Surface(
+                                color = if (match.isFinished) Color(0xFF2E7D32) else Color(0xFFF57C00),
+                                shape = RoundedCornerShape(6.dp)
+                            ) {
+                                Text(
+                                    text = if (match.isFinished) "SETS: ${match.homeSets} - ${match.guestSets}" else "PENDIENTE",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 11.sp,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                                )
+                            }
                         }
                         Spacer(modifier = Modifier.height(6.dp))
                         Text("$clubName vs ${match.rivalName}", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("📍 ${match.location}", color = TextGray, fontSize = 12.sp)
+                        Text("📍 ${match.location} • 📅 ${match.date}", color = TextGray, fontSize = 12.sp)
                     }
                 }
             }
@@ -209,7 +255,6 @@ fun CoachTacticsTab() {
     var selectedRotation by remember { mutableStateOf("Rotación 1 (P1)") }
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        // Cabecera Táctica
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -232,7 +277,6 @@ fun CoachTacticsTab() {
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Filtros de Fase (K1 / K2)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -271,7 +315,6 @@ fun CoachTacticsTab() {
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Selector de Rotaciones
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -296,7 +339,6 @@ fun CoachTacticsTab() {
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Campo Táctico 2D con delimitación para arrastrar libremente las fichas
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -306,7 +348,6 @@ fun CoachTacticsTab() {
                 .clip(RoundedCornerShape(14.dp))
                 .padding(10.dp)
         ) {
-            // Red Central
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -315,7 +356,6 @@ fun CoachTacticsTab() {
                     .align(Alignment.TopCenter)
             )
 
-            // Fichas de Jugadores interactivas (arrastrables)
             TacticalPlayerToken("10", "PUNTA", initialOffset = Offset(20f, 40f))
             TacticalPlayerToken("7", "CENTRAL", initialOffset = Offset(130f, 40f))
             TacticalPlayerToken("4", "COLOC", initialOffset = Offset(240f, 40f))
@@ -326,7 +366,6 @@ fun CoachTacticsTab() {
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Barra de Herramientas
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -344,7 +383,7 @@ fun CoachTacticsTab() {
         Spacer(modifier = Modifier.height(14.dp))
 
         Button(
-            onClick = { /* Lógica para guardar la jugada */ },
+            onClick = { /* Guardar jugada */ },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
@@ -452,9 +491,98 @@ fun CoachClubTab(clubName: String, playerList: List<PlayerMember>) {
 }
 
 @Composable
-fun CoachStatsTab() {
-    Column {
+fun CoachStatsTab(
+    matchesPlayed: Int,
+    winRate: Int,
+    attackEff: Float,
+    serveEff: Float,
+    blockEff: Float,
+    receptionEff: Float
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
         Text("📊  ESTADÍSTICAS DEL EQUIPO", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+        Text("Resumen analítico en tiempo real", color = TextGray, fontSize = 12.sp)
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            StatCard(title = "Partidos Jugados", value = "$matchesPlayed", modifier = Modifier.weight(1f))
+            StatCard(title = "% Victorias", value = "$winRate%", modifier = Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            StatCard(title = "Efectividad Remate", value = "${(attackEff * 100).toInt()}%", modifier = Modifier.weight(1f))
+            StatCard(title = "Efectividad Saque", value = "${(serveEff * 100).toInt()}%", modifier = Modifier.weight(1f))
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Text("RENDIMIENTO TÁCTICO PONDERADO", color = TextWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Surface(
+            color = CardBg,
+            shape = RoundedCornerShape(14.dp),
+            border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SkillProgressRow(skill = "Ataque", progress = attackEff)
+                SkillProgressRow(skill = "Bloqueo", progress = blockEff)
+                SkillProgressRow(skill = "Recepción", progress = receptionEff)
+                SkillProgressRow(skill = "Saque", progress = serveEff)
+            }
+        }
+    }
+}
+
+@Composable
+fun StatCard(title: String, value: String, modifier: Modifier = Modifier) {
+    Surface(
+        color = CardBg,
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+        modifier = modifier
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(text = value, color = NeonGreen, fontSize = 24.sp, fontWeight = FontWeight.Bold)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = title, color = TextGray, fontSize = 12.sp)
+        }
+    }
+}
+
+@Composable
+fun SkillProgressRow(skill: String, progress: Float) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(text = skill, color = TextWhite, fontSize = 13.sp)
+            Text(text = "${(progress * 100).toInt()}%", color = TextGray, fontSize = 13.sp)
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(8.dp)
+                .clip(RoundedCornerShape(4.dp)),
+            color = NeonGreen,
+            trackColor = Color(0xFF2C2C2C)
+        )
     }
 }
 
@@ -518,9 +646,57 @@ fun PlayerListItem(dorsal: String, name: String, position: String, isTitular: Bo
     }
 }
 
-// -------------------------------------------------------------
-// VISTA PREVIA PARA ANDROID STUDIO
-// -------------------------------------------------------------
+@Composable
+fun MatchDetailDialog(
+    match: MatchEvent,
+    localClubName: String,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = CardBg,
+        title = {
+            Text(
+                text = "Resumen del Partido",
+                color = TextWhite,
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "$localClubName vs ${match.rivalName}",
+                    color = NeonGreen,
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(text = "Fecha: ${match.date}", color = Color.LightGray, fontSize = 13.sp)
+                Text(text = "Ubicación: ${match.location}", color = Color.LightGray, fontSize = 13.sp)
+                Text(text = "Tipo: ${match.matchType}", color = Color.LightGray, fontSize = 13.sp)
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp), color = CardBorder)
+
+                Text(
+                    text = "Resultado Sets: ${match.homeSets} - ${match.guestSets}",
+                    color = TextWhite,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = "Puntos Totales: ${match.homePoints} - ${match.guestPoints}",
+                    color = TextWhite,
+                    fontSize = 14.sp
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("CERRAR", color = NeonGreen, fontWeight = FontWeight.Bold)
+            }
+        }
+    )
+}
+
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun HomeScreenPreview() {
@@ -528,8 +704,24 @@ fun HomeScreenPreview() {
         HomeScreen(
             clubName = "CV OLÍMPICO",
             matchesList = listOf(
-                MatchEvent("DRAKOS", "Hoy, 18:30h", "Pabellón Norte", "Liga Oficial")
-            )
+                MatchEvent(
+                    rivalName = "DRAKOS",
+                    date = "Hoy, 18:30h",
+                    location = "Pabellón Norte",
+                    matchType = "Liga Oficial",
+                    homePoints = 75,
+                    guestPoints = 62,
+                    homeSets = 3,
+                    guestSets = 1,
+                    isFinished = true
+                )
+            ),
+            totalMatchesPlayed = 1,
+            winPercentage = 100,
+            attackEff = 0.72f,
+            serveEff = 0.80f,
+            blockEff = 0.65f,
+            receptionEff = 0.88f
         )
     }
 }

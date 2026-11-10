@@ -5,10 +5,11 @@ import com.google.firebase.firestore.FirebaseFirestore
 class FirebaseService {
     private val db = FirebaseFirestore.getInstance()
 
-    // 1. Guardar un partido en Firestore
-    fun saveMatch(match: MatchEvent, onComplete: (Boolean) -> Unit) {
+    // 1. Guardar/Actualizar un partido en Firestore usando su ID
+    fun saveMatch(match: MatchEvent, onComplete: (Boolean) -> Unit = {}) {
         db.collection("matches")
-            .add(match)
+            .document(match.id)
+            .set(match)
             .addOnSuccessListener { onComplete(true) }
             .addOnFailureListener { onComplete(false) }
     }
@@ -23,10 +24,11 @@ class FirebaseService {
             }
     }
 
-    // 3. Registrar un jugador en Firestore
-    fun savePlayer(player: PlayerMember, onComplete: (Boolean) -> Unit) {
+    // 3. Registrar un jugador en Firestore usando su ID
+    fun savePlayer(player: PlayerMember, onComplete: (Boolean) -> Unit = {}) {
         db.collection("players")
-            .add(player)
+            .document(player.id)
+            .set(player)
             .addOnSuccessListener { onComplete(true) }
             .addOnFailureListener { onComplete(false) }
     }
@@ -42,7 +44,7 @@ class FirebaseService {
     }
 
     // 5. Guardar/Actualizar perfil de usuario en Firestore
-    fun saveUserProfile(name: String, club: String, role: String, onComplete: (Boolean) -> Unit) {
+    fun saveUserProfile(name: String, club: String, role: String, onComplete: (Boolean) -> Unit = {}) {
         val userMap = hashMapOf(
             "name" to name,
             "club" to club,
