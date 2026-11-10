@@ -157,7 +157,7 @@ class AppViewModel : ViewModel() {
     }
 
     // -------------------------------------------------------------
-    // GESTIÓN DE PLANTILLA DE JUGADORES
+    // GESTIÓN DE PLANTILLA DE JUGADORES hola adrian
     // -------------------------------------------------------------
     fun addPlayer(dorsal: String, name: String, position: String, isTitular: Boolean = true) {
         val player = PlayerMember(
