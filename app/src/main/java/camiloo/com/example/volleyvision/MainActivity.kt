@@ -32,6 +32,7 @@ class MainActivity : ComponentActivity() {
                     Screen.LOGIN -> LoginScreen(
                         onNavigateToRegister = { currentScreen = Screen.REGISTER },
                         onNavigateToHome = {
+                            viewModel.loadUserData()
                             currentScreen = if (viewModel.userRole.value == "Jugador") Screen.PLAYER_HOME else Screen.HOME
                         },
                         onBackToWelcome = { currentScreen = Screen.WELCOME }
@@ -40,7 +41,6 @@ class MainActivity : ComponentActivity() {
                         onNavigateToLogin = { currentScreen = Screen.LOGIN },
                         onRegisterSuccess = { email, pass, name, club, role, onComplete ->
                             viewModel.registerNewAccount(email, pass, name, club, role) { success, err ->
-                                // Apaga el indicador de carga en el formulario
                                 onComplete(success, err)
                                 if (success) {
                                     currentScreen = if (role == "Jugador") Screen.PLAYER_HOME else Screen.HOME

@@ -8,7 +8,9 @@ class FirebaseService {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
-    // Registrar Usuario en Auth y guardar perfil en Firestore
+    private val currentUserId: String?
+        get() = auth.currentUser?.uid
+
     fun registerUser(
         email: String,
         pass: String,
@@ -36,9 +38,8 @@ class FirebaseService {
             }
     }
 
-    // Escuchar cambios de datos de usuario
     fun listenToUserProfile(onUpdate: (String, String, String) -> Unit) {
-        val uid = auth.currentUser?.uid ?: return
+        val uid = currentUserId ?: return
         db.collection("users").document(uid).addSnapshotListener { snapshot, _ ->
             if (snapshot != null && snapshot.exists()) {
                 val name = snapshot.getString("name") ?: "Entrenador"
@@ -49,9 +50,8 @@ class FirebaseService {
         }
     }
 
-    // Guardar o actualizar datos de usuario
     fun saveUserProfile(name: String, club: String, role: String) {
-        val uid = auth.currentUser?.uid ?: return
+        val uid = currentUserId ?: return
         val userData = hashMapOf(
             "name" to name,
             "club" to club,
@@ -60,37 +60,49 @@ class FirebaseService {
         db.collection("users").document(uid).set(userData, com.google.firebase.firestore.SetOptions.merge())
     }
 
-    // GUARDAR O ACTUALIZAR UN PARTIDO EN LA COLECCIÓN "matches"
+    // Subcolección única del usuario: users/{UID}/matches
     fun saveMatch(match: MatchEvent) {
-        db.collection("matches")
+        val uid = currentUserId ?: return
+        db.collection("users")
+            .document(uid)
+            .collection("matches")
             .document(match.id)
             .set(match)
     }
 
-    // Escuchar partidos en tiempo real
     fun listenToMatches(onMatchesReceived: (List<MatchEvent>) -> Unit) {
-        db.collection("matches").addSnapshotListener { snapshot, _ ->
-            if (snapshot != null) {
-                val list = snapshot.toObjects(MatchEvent::class.java)
-                onMatchesReceived(list)
+        val uid = currentUserId ?: return
+        db.collection("users")
+            .document(uid)
+            .collection("matches")
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    val list = snapshot.toObjects(MatchEvent::class.java)
+                    onMatchesReceived(list)
+                }
             }
-        }
     }
 
-    // GUARDAR JUGADOR EN LA COLECCIÓN "players"
+    // Subcolección única del usuario: users/{UID}/players
     fun savePlayer(player: PlayerMember) {
-        db.collection("players")
+        val uid = currentUserId ?: return
+        db.collection("users")
+            .document(uid)
+            .collection("players")
             .document(player.id)
             .set(player)
     }
 
-    // Escuchar jugadores en tiempo real
     fun listenToPlayers(onPlayersReceived: (List<PlayerMember>) -> Unit) {
-        db.collection("players").addSnapshotListener { snapshot, _ ->
-            if (snapshot != null) {
-                val list = snapshot.toObjects(PlayerMember::class.java)
-                onPlayersReceived(list)
+        val uid = currentUserId ?: return
+        db.collection("users")
+            .document(uid)
+            .collection("players")
+            .addSnapshotListener { snapshot, _ ->
+                if (snapshot != null) {
+                    val list = snapshot.toObjects(PlayerMember::class.java)
+                    onPlayersReceived(list)
+                }
             }
-        }
     }
 }

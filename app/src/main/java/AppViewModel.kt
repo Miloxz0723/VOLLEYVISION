@@ -10,20 +10,24 @@ class AppViewModel : ViewModel() {
 
     private val firebaseService = FirebaseService()
 
-    // Estados principales del usuario
     val userName = mutableStateOf("Entrenador")
     val clubName = mutableStateOf("CV OLÍMPICO")
     val userRole = mutableStateOf("Entrenador")
 
-    // Listas observables en tiempo real
     val matchesList = mutableStateListOf<MatchEvent>()
     val playerList = mutableStateListOf<PlayerMember>()
-
-    // Rotación táctica de posiciones en cancha (P1 a P6)
     val courtPositions = mutableStateMapOf<Int, PlayerMember?>()
 
     init {
-        // Escuchar datos de Firebase Firestore al iniciar
+        loadUserData()
+    }
+
+    // Carga o recarga los datos privados del usuario autenticado
+    fun loadUserData() {
+        matchesList.clear()
+        playerList.clear()
+        courtPositions.clear()
+
         firebaseService.listenToUserProfile { name, club, role ->
             userName.value = name
             clubName.value = club
@@ -42,7 +46,6 @@ class AppViewModel : ViewModel() {
         }
     }
 
-    // 1. REGISTRO DE NUEVA CUENTA EN FIREBASE AUTH + FIRESTORE
     fun registerNewAccount(
         email: String,
         pass: String,
@@ -56,12 +59,12 @@ class AppViewModel : ViewModel() {
                 userName.value = name
                 clubName.value = club
                 userRole.value = role
+                loadUserData() // Carga el estado limpio de la nueva cuenta
             }
             onResult(success, error)
         }
     }
 
-    // 2. ACTUALIZACIÓN MANUAL DE DATOS DE USUARIO
     fun setUserData(name: String, club: String, role: String) {
         userName.value = name
         clubName.value = club
@@ -69,7 +72,6 @@ class AppViewModel : ViewModel() {
         firebaseService.saveUserProfile(name, club, role)
     }
 
-    // 3. AGREGAR NUEVO PARTIDO Y GUARDAR EN FIRESTORE EN TIEMPO REAL
     fun addMatch(
         rival: String,
         date: String,
@@ -91,14 +93,10 @@ class AppViewModel : ViewModel() {
             isFinished = false
         )
 
-        // Agregar a la lista local observable
         matchesList.add(newMatch)
-
-        // PERSISTIR DIRECTAMENTE EN FIRESTORE
         firebaseService.saveMatch(newMatch)
     }
 
-    // 4. FINALIZAR PARTIDO Y ACTUALIZAR EN FIRESTORE
     fun finishCurrentMatch(
         homePoints: Int,
         guestPoints: Int,
@@ -131,7 +129,6 @@ class AppViewModel : ViewModel() {
         firebaseService.saveMatch(updatedMatch)
     }
 
-    // 5. REGISTRO DE PUNTOS POR ACCIÓN TÁCTICA
     fun recordPointForPlayerByAction(action: String) {
         val targetZone = when (action) {
             "SAQUE" -> 1
@@ -160,7 +157,6 @@ class AppViewModel : ViewModel() {
         }
     }
 
-    // 6. ROTACIÓN INICIAL EN CANCHA
     private fun setupInitialCourtRotation() {
         val titulars = playerList.filter { it.isTitular }.take(6)
         titulars.forEachIndexed { index, player ->
@@ -168,7 +164,6 @@ class AppViewModel : ViewModel() {
         }
     }
 
-    // CÁLCULO DE ESTADÍSTICAS
     fun getFinishedMatchesCount(): Int = matchesList.count { it.isFinished }
 
     fun getWinPercentage(): Int {

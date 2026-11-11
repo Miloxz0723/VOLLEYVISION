@@ -10,12 +10,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 private val BgMain = Color(0xFF0F172A)
 private val CardBg = Color(0xFF1E293B)
-private val NeonGreen = Color(0xFF10B981)
+private val NeonGreen = Color(0xFF236AF8)
 
 @Composable
 fun RegisterScreen(
@@ -196,4 +197,14 @@ fun RegisterScreen(
             }
         }
     }
+}
+
+@Preview(showBackground = true, showSystemUi = true)
+@Composable
+fun RegisterScreenPreview() {
+    RegisterScreen(
+        onNavigateToLogin = {},
+        onRegisterSuccess = { _, _, _, _, _, _ -> },
+        onBackToWelcome = {}
+    )
 }
