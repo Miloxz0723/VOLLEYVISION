@@ -49,8 +49,10 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation("io.coil-kt:coil-compose:2.7.0") //Agregar Foto del jugador
-    implementation("androidx.compose.material:material-icons-core") //Icons
+    implementation("io.coil-kt:coil-compose:2.7.0") // Agregar Foto del jugador
+    implementation("androidx.compose.material:material-icons-core") // Icons
+
+    // CameraX (Funcionalidad agregada por tu compañero)
     implementation("androidx.camera:camera-core:1.3.4")
     implementation("androidx.camera:camera-camera2:1.3.4")
     implementation("androidx.camera:camera-lifecycle:1.3.4")
@@ -58,8 +60,9 @@ dependencies {
     implementation("androidx.camera:camera-video:1.3.4")
     implementation("com.google.guava:guava:33.0.0-android")
 
-    // Firebase BoM y Firestore
+    // Firebase BoM, Authentication y Firestore
     implementation(platform("com.google.firebase:firebase-bom:33.1.0"))
+    implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
 
     testImplementation(libs.junit)

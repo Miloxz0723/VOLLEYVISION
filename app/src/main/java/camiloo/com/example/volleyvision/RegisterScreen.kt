@@ -1,235 +1,199 @@
 package camiloo.com.example.volleyvision
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import camiloo.com.example.volleyvision.ui.theme.*
+
+private val BgMain = Color(0xFF0F172A)
+private val CardBg = Color(0xFF1E293B)
+private val NeonGreen = Color(0xFF10B981)
 
 @Composable
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
-    onRegisterSuccess: (String, String, String) -> Unit, // Envía: Nombre, Club y Rol
+    onRegisterSuccess: (String, String, String, String, String, (Boolean, String?) -> Unit) -> Unit,
     onBackToWelcome: () -> Unit
 ) {
     var name by remember { mutableStateOf("") }
-    var clubName by remember { mutableStateOf("") }
-    var role by remember { mutableStateOf("Entrenador") }
+    var club by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
-    val context = LocalContext.current
+    var selectedRole by remember { mutableStateOf("Entrenador") }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
 
-    val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = NeonGreen,
-        unfocusedBorderColor = CardBorder,
-        focusedLabelColor = NeonGreen,
-        unfocusedLabelColor = TextGray,
-        focusedTextColor = TextWhite,
-        unfocusedTextColor = TextWhite
-    )
-
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BgMain)
-            .padding(24.dp)
-            .verticalScroll(rememberScrollState()),
-        horizontalAlignment = Alignment.CenterHorizontally
+            .background(BgMain),
+        contentAlignment = Alignment.Center
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Volver atrás
-        TextButton(
-            onClick = onBackToWelcome,
-            modifier = Modifier.align(Alignment.Start)
-        ) {
-            Text("← Volver", color = TextGray, fontSize = 14.sp)
-        }
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text("🏐", fontSize = 48.sp)
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        Text(
-            text = "Crear Cuenta",
-            color = TextWhite,
-            fontSize = 26.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Text(
-            text = "Únete a VolleyApp y gestiona tu equipo",
-            color = TextGray,
-            fontSize = 14.sp,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(28.dp))
-
-        // Campo Nombre Completo
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Nombre Completo") },
-            singleLine = true,
-            colors = textFieldColors,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Campo Nombre del Club / Equipo
-        OutlinedTextField(
-            value = clubName,
-            onValueChange = { clubName = it },
-            label = { Text("Nombre del Club / Equipo") },
-            placeholder = { Text("Ej. CV Olímpico", color = TextGray) },
-            singleLine = true,
-            colors = textFieldColors,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Selección de Rol
-        Text(
-            text = "Selecciona tu Rol:",
-            color = TextGray,
-            fontSize = 14.sp,
-            modifier = Modifier.align(Alignment.Start)
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            FilterChip(
-                selected = role == "Entrenador",
-                onClick = { role = "Entrenador" },
-                label = { Text("📋 Entrenador") },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = NeonGreen,
-                    selectedLabelColor = BgMain,
-                    containerColor = CardBg,
-                    labelColor = TextWhite
-                ),
-                modifier = Modifier.weight(1f)
-            )
-
-            FilterChip(
-                selected = role == "Jugador",
-                onClick = { role = "Jugador" },
-                label = { Text("🏃 Jugador") },
-                colors = FilterChipDefaults.filterChipColors(
-                    selectedContainerColor = NeonGreen,
-                    selectedLabelColor = BgMain,
-                    containerColor = CardBg,
-                    labelColor = TextWhite
-                ),
-                modifier = Modifier.weight(1f)
-            )
-        }
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Campo Correo
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("Correo Electrónico") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            colors = textFieldColors,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Campo Contraseña
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text("Contraseña") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            colors = textFieldColors,
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.fillMaxWidth()
-        )
-
-        Spacer(modifier = Modifier.height(28.dp))
-
-        // Botón Registrarse
-        Button(
-            onClick = {
-                if (name.isNotEmpty() && clubName.isNotEmpty() && email.isNotEmpty() && password.isNotEmpty()) {
-                    Toast.makeText(context, "Registro exitoso como $role", Toast.LENGTH_SHORT).show()
-                    onRegisterSuccess(name, clubName, role)
-                } else {
-                    Toast.makeText(context, "Por favor completa todos los campos", Toast.LENGTH_SHORT).show()
-                }
-            },
-            colors = ButtonDefaults.buttonColors(containerColor = NeonGreen),
-            shape = RoundedCornerShape(14.dp),
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(54.dp)
+                .fillMaxWidth(0.9f)
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Registrarme",
-                color = BgMain,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold
+                text = "CREAR CUENTA",
+                fontSize = 26.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
             )
-        }
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        TextButton(onClick = onNavigateToLogin) {
             Text(
-                text = "¿Ya tienes cuenta? Inicia sesión",
-                color = NeonGreen,
+                text = "Registra tu club y perfil",
+                color = Color.LightGray,
                 fontSize = 14.sp
             )
-        }
-    }
-}
 
-@Preview(showBackground = true)
-@Composable
-fun RegisterScreenPreview() {
-    VolleyVisionTheme {
-        RegisterScreen(
-            onNavigateToLogin = {},
-            onRegisterSuccess = { _, _, _ -> },
-            onBackToWelcome = {}
-        )
+            // Nombre
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Nombre Completo") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = NeonGreen,
+                    unfocusedBorderColor = Color.Gray,
+                    focusedLabelColor = NeonGreen,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                )
+            )
+
+            // Club
+            OutlinedTextField(
+                value = club,
+                onValueChange = { club = it },
+                label = { Text("Nombre del Club / Equipo") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = NeonGreen,
+                    unfocusedBorderColor = Color.Gray,
+                    focusedLabelColor = NeonGreen,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                )
+            )
+
+            // Correo
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Correo Electrónico (ej: usuario@gmail.com)") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = NeonGreen,
+                    unfocusedBorderColor = Color.Gray,
+                    focusedLabelColor = NeonGreen,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                )
+            )
+
+            // Contraseña
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Contraseña (mínimo 6 caracteres)") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = NeonGreen,
+                    unfocusedBorderColor = Color.Gray,
+                    focusedLabelColor = NeonGreen,
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White
+                )
+            )
+
+            // Selección de Rol
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = { selectedRole = "Entrenador" },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (selectedRole == "Entrenador") NeonGreen else CardBg
+                    )
+                ) {
+                    Text("Entrenador", color = if (selectedRole == "Entrenador") BgMain else Color.White)
+                }
+
+                Button(
+                    onClick = { selectedRole = "Jugador" },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (selectedRole == "Jugador") NeonGreen else CardBg
+                    )
+                ) {
+                    Text("Jugador", color = if (selectedRole == "Jugador") BgMain else Color.White)
+                }
+            }
+
+            // Mensaje de Error
+            if (errorMessage.isNotEmpty()) {
+                Text(
+                    text = errorMessage,
+                    color = Color.Red,
+                    fontSize = 12.sp
+                )
+            }
+
+            // Botón de Registrarse
+            Button(
+                onClick = {
+                    if (email.isBlank() || password.isBlank() || name.isBlank() || club.isBlank()) {
+                        errorMessage = "Por favor completa todos los campos"
+                    } else if (!email.contains("@") || !email.contains(".")) {
+                        errorMessage = "Ingresa un correo válido (ejemplo@gmail.com)"
+                    } else if (password.length < 6) {
+                        errorMessage = "La contraseña debe tener al menos 6 caracteres"
+                    } else {
+                        isLoading = true
+                        errorMessage = ""
+                        onRegisterSuccess(email.trim(), password.trim(), name.trim(), club.trim(), selectedRole) { success, err ->
+                            isLoading = false
+                            if (!success) {
+                                errorMessage = err ?: "Error al registrar la cuenta en Firebase"
+                            }
+                        }
+                    }
+                },
+                enabled = !isLoading,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(50.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = NeonGreen),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(color = BgMain, modifier = Modifier.size(24.dp))
+                } else {
+                    Text("REGISTRARME", color = BgMain, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            TextButton(onClick = onNavigateToLogin) {
+                Text("¿Ya tienes cuenta? Inicia sesión", color = Color.White)
+            }
+        }
     }
 }

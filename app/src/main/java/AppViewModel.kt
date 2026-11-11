@@ -1,35 +1,33 @@
 package camiloo.com.example.volleyvision
 
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import java.util.UUID
 
 class AppViewModel : ViewModel() {
 
     private val firebaseService = FirebaseService()
 
-    var userName = mutableStateOf("Entrenador")
-    var clubName = mutableStateOf("CV OLÍMPICO")
-    var userRole = mutableStateOf("Entrenador")
+    // Estados principales del usuario
+    val userName = mutableStateOf("Entrenador")
+    val clubName = mutableStateOf("CV OLÍMPICO")
+    val userRole = mutableStateOf("Entrenador")
 
+    // Listas observables en tiempo real
     val matchesList = mutableStateListOf<MatchEvent>()
     val playerList = mutableStateListOf<PlayerMember>()
-    val tacticalPlaysList = mutableStateListOf<TacticalPlay>()
 
-    // Posiciones activas en la cancha: Mapa de Zona (1 a 6) -> Jugador
-    val courtPositions = mutableStateOf(mutableMapOf<Int, PlayerMember>())
-
-    private var currentMatchId: String? = null
+    // Rotación táctica de posiciones en cancha (P1 a P6)
+    val courtPositions = mutableStateMapOf<Int, PlayerMember?>()
 
     init {
-        listenToFirebaseData()
-    }
-
-    private fun listenToFirebaseData() {
+        // Escuchar datos de Firebase Firestore al iniciar
         firebaseService.listenToUserProfile { name, club, role ->
-            if (name.isNotBlank()) userName.value = name
-            if (club.isNotBlank()) clubName.value = club
-            if (role.isNotBlank()) userRole.value = role
+            userName.value = name
+            clubName.value = club
+            userRole.value = role
         }
 
         firebaseService.listenToMatches { updatedMatches ->
@@ -38,95 +36,32 @@ class AppViewModel : ViewModel() {
         }
 
         firebaseService.listenToPlayers { updatedPlayers ->
-            if (updatedPlayers.isNotEmpty()) {
-                playerList.clear()
-                playerList.addAll(updatedPlayers)
-                setupInitialCourtRotation()
-            } else {
-                loadInitialMockPlayers()
+            playerList.clear()
+            playerList.addAll(updatedPlayers)
+            setupInitialCourtRotation()
+        }
+    }
+
+    // 1. REGISTRO DE NUEVA CUENTA EN FIREBASE AUTH + FIRESTORE
+    fun registerNewAccount(
+        email: String,
+        pass: String,
+        name: String,
+        club: String,
+        role: String,
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        firebaseService.registerUser(email, pass, name, club, role) { success, error ->
+            if (success) {
+                userName.value = name
+                clubName.value = club
+                userRole.value = role
             }
+            onResult(success, error)
         }
     }
 
-    // Ubica a los titulares en las zonas P1 a P6 al iniciar el partido
-    private fun setupInitialCourtRotation() {
-        val map = mutableMapOf<Int, PlayerMember>()
-        val titulares = playerList.filter { it.isTitular }.take(6)
-        val activeLineup = if (titulares.size == 6) titulares else playerList.take(6)
-
-        activeLineup.forEachIndexed { index, player ->
-            val zone = index + 1
-            player.currentZone = zone
-            map[zone] = player
-        }
-        courtPositions.value = map
-    }
-
-    private fun loadInitialMockPlayers() {
-        val initialPlayers = listOf(
-            PlayerMember(dorsal = "10", name = "Mateo López", position = "PUNTA", isTitular = true),
-            PlayerMember(dorsal = "7", name = "Carlos Ruiz", position = "CENTRAL", isTitular = true),
-            PlayerMember(dorsal = "4", name = "Santiago Gómez", position = "COLOCADOR", isTitular = true),
-            PlayerMember(dorsal = "2", name = "Lucas Silva", position = "LÍBERO", isTitular = true),
-            PlayerMember(dorsal = "9", name = "Andrés Morales", position = "RECEP 2", isTitular = true),
-            PlayerMember(dorsal = "15", name = "Gabriel Torres", position = "OPUESTO", isTitular = true)
-        )
-        initialPlayers.forEach { addPlayer(it.dorsal, it.name, it.position, it.isTitular) }
-    }
-
-    // -------------------------------------------------------------
-    // ASIGNACIÓN AUTOMÁTICA DE PUNTOS SEGÚN LA ZONA DE LA JUGADA
-    // -------------------------------------------------------------
-    fun recordPointForPlayerByAction(action: String) {
-        val map = courtPositions.value
-
-        // Asignación táctica:
-        // - SAQUE: Jugador en P1 (zona de servicio)
-        // - BLOQUEO: Central en P3 (centro de la red)
-        // - REMATE: Atacante en P4 (red izquierda)
-        val targetZone = when (action) {
-            "SAQUE" -> 1
-            "BLOQUEO" -> 3
-            "REMATE" -> 4
-            else -> 1
-        }
-
-        val player = map[targetZone]
-        if (player != null) {
-            when (action) {
-                "SAQUE" -> player.stats.acePoints++
-                "BLOQUEO" -> player.stats.blockPoints++
-                "REMATE" -> player.stats.attackPoints++
-            }
-            // Sincronizar actualización individual del jugador en Firestore
-            firebaseService.savePlayer(player)
-        }
-    }
-
-    // -------------------------------------------------------------
-    // ROTACIÓN DE EQUIPO EN SENTIDO HORARIO (P1 -> P6 -> P5 -> P4 -> P3 -> P2 -> P1)
-    // -------------------------------------------------------------
-    fun rotateTeam() {
-        val currentMap = courtPositions.value
-        val newMap = mutableMapOf<Int, PlayerMember>()
-
-        val p1 = currentMap[1]
-        val p2 = currentMap[2]
-        val p3 = currentMap[3]
-        val p4 = currentMap[4]
-        val p5 = currentMap[5]
-        val p6 = currentMap[6]
-
-        if (p1 != null) newMap[6] = p1
-        if (p6 != null) newMap[5] = p6
-        if (p5 != null) newMap[4] = p5
-        if (p4 != null) newMap[3] = p4
-        if (p3 != null) newMap[2] = p3
-        if (p2 != null) newMap[1] = p2
-
-        courtPositions.value = newMap
-    }
-
+    // 2. ACTUALIZACIÓN MANUAL DE DATOS DE USUARIO
     fun setUserData(name: String, club: String, role: String) {
         userName.value = name
         clubName.value = club
@@ -134,48 +69,106 @@ class AppViewModel : ViewModel() {
         firebaseService.saveUserProfile(name, club, role)
     }
 
-    fun addMatch(rival: String, date: String, loc: String, type: String) {
+    // 3. AGREGAR NUEVO PARTIDO Y GUARDAR EN FIRESTORE EN TIEMPO REAL
+    fun addMatch(
+        rival: String,
+        date: String,
+        location: String,
+        matchType: String,
+        registrationMode: String = "Solo Marcador y Puntos"
+    ) {
         val newMatch = MatchEvent(
+            id = UUID.randomUUID().toString(),
             rivalName = rival,
             date = date,
-            location = loc,
-            matchType = type,
+            location = location,
+            matchType = matchType,
+            registrationMode = registrationMode,
+            homePoints = 0,
+            guestPoints = 0,
+            homeSets = 0,
+            guestSets = 0,
             isFinished = false
         )
-        currentMatchId = newMatch.id
+
+        // Agregar a la lista local observable
+        matchesList.add(newMatch)
+
+        // PERSISTIR DIRECTAMENTE EN FIRESTORE
         firebaseService.saveMatch(newMatch)
     }
 
+    // 4. FINALIZAR PARTIDO Y ACTUALIZAR EN FIRESTORE
     fun finishCurrentMatch(
-        homePoints: Int, guestPoints: Int, homeSets: Int, guestSets: Int,
-        attackPts: Int, blockPts: Int, servePts: Int
+        homePoints: Int,
+        guestPoints: Int,
+        homeSets: Int,
+        guestSets: Int,
+        attackPts: Int,
+        blockPts: Int,
+        servePts: Int
     ) {
-        val index = matchesList.indexOfFirst { it.id == currentMatchId }
+        val currentMatch = matchesList.lastOrNull { !it.isFinished } ?: return
+        val updatedStats = currentMatch.statsSummary.copy(
+            attackPoints = attackPts,
+            blockPoints = blockPts,
+            servePoints = servePts
+        )
+        val updatedMatch = currentMatch.copy(
+            homePoints = homePoints,
+            guestPoints = guestPoints,
+            homeSets = homeSets,
+            guestSets = guestSets,
+            isFinished = true,
+            statsSummary = updatedStats
+        )
+
+        val index = matchesList.indexOfFirst { it.id == currentMatch.id }
         if (index != -1) {
-            val totalPts = if (homePoints > 0) homePoints else 1
+            matchesList[index] = updatedMatch
+        }
 
-            val generatedStats = MatchStatsSummary(
-                attackPoints = attackPts,
-                blockPoints = blockPts,
-                servePoints = servePts,
-                attackEfficiencyPercentage = (attackPts.toFloat() / totalPts).coerceIn(0.1f, 0.95f),
-                blockEfficiencyPercentage = (blockPts.toFloat() / totalPts).coerceIn(0.1f, 0.95f),
-                serveEfficiencyPercentage = (servePts.toFloat() / totalPts).coerceIn(0.1f, 0.95f)
-            )
+        firebaseService.saveMatch(updatedMatch)
+    }
 
-            val updatedMatch = matchesList[index].copy(
-                homePoints = homePoints,
-                guestPoints = guestPoints,
-                homeSets = homeSets,
-                guestSets = guestSets,
-                isFinished = true,
-                statsSummary = generatedStats
-            )
+    // 5. REGISTRO DE PUNTOS POR ACCIÓN TÁCTICA
+    fun recordPointForPlayerByAction(action: String) {
+        val targetZone = when (action) {
+            "SAQUE" -> 1
+            "BLOQUEO" -> 3
+            "REMATE" -> 4
+            else -> 1
+        }
 
-            firebaseService.saveMatch(updatedMatch)
+        val playerInZone = courtPositions[targetZone]
+        if (playerInZone != null) {
+            val currentStats = playerInZone.stats
+            val updatedStats = when (action) {
+                "SAQUE" -> currentStats.copy(acePoints = currentStats.acePoints + 1)
+                "BLOQUEO" -> currentStats.copy(blockPoints = currentStats.blockPoints + 1)
+                "REMATE" -> currentStats.copy(attackPoints = currentStats.attackPoints + 1)
+                else -> currentStats
+            }
+            val updatedPlayer = playerInZone.copy(stats = updatedStats)
+
+            val index = playerList.indexOfFirst { it.id == playerInZone.id }
+            if (index != -1) {
+                playerList[index] = updatedPlayer
+            }
+            courtPositions[targetZone] = updatedPlayer
+            firebaseService.savePlayer(updatedPlayer)
         }
     }
 
+    // 6. ROTACIÓN INICIAL EN CANCHA
+    private fun setupInitialCourtRotation() {
+        val titulars = playerList.filter { it.isTitular }.take(6)
+        titulars.forEachIndexed { index, player ->
+            courtPositions[index + 1] = player
+        }
+    }
+
+    // CÁLCULO DE ESTADÍSTICAS
     fun getFinishedMatchesCount(): Int = matchesList.count { it.isFinished }
 
     fun getWinPercentage(): Int {
@@ -186,40 +179,22 @@ class AppViewModel : ViewModel() {
     }
 
     fun getAverageAttackEfficiency(): Float {
-        val finished = matchesList.filter { it.isFinished }
-        if (finished.isEmpty()) return 0.68f
-        return finished.map { it.statsSummary.attackEfficiencyPercentage }.average().toFloat()
+        if (playerList.isEmpty()) return 0.70f
+        val totalAttacks = playerList.sumOf { it.stats.attackPoints }
+        return if (totalAttacks == 0) 0.65f else (totalAttacks.toFloat() / (totalAttacks + 5)).coerceIn(0f, 1f)
     }
 
     fun getAverageServeEfficiency(): Float {
-        val finished = matchesList.filter { it.isFinished }
-        if (finished.isEmpty()) return 0.82f
-        return finished.map { it.statsSummary.serveEfficiencyPercentage }.average().toFloat()
+        if (playerList.isEmpty()) return 0.80f
+        val totalServes = playerList.sumOf { it.stats.acePoints }
+        return if (totalServes == 0) 0.75f else (totalServes.toFloat() / (totalServes + 5)).coerceIn(0f, 1f)
     }
 
     fun getAverageBlockEfficiency(): Float {
-        val finished = matchesList.filter { it.isFinished }
-        if (finished.isEmpty()) return 0.60f
-        return finished.map { it.statsSummary.blockEfficiencyPercentage }.average().toFloat()
+        if (playerList.isEmpty()) return 0.60f
+        val totalBlocks = playerList.sumOf { it.stats.blockPoints }
+        return if (totalBlocks == 0) 0.60f else (totalBlocks.toFloat() / (totalBlocks + 5)).coerceIn(0f, 1f)
     }
 
-    fun getAverageReceptionEfficiency(): Float {
-        val finished = matchesList.filter { it.isFinished }
-        if (finished.isEmpty()) return 0.85f
-        return finished.map { it.statsSummary.receptionEfficiencyPercentage }.average().toFloat()
-    }
-
-    fun addPlayer(dorsal: String, name: String, position: String, isTitular: Boolean = true) {
-        val player = PlayerMember(
-            dorsal = dorsal,
-            name = name,
-            position = position,
-            isTitular = isTitular
-        )
-        firebaseService.savePlayer(player)
-    }
-
-    fun saveTacticalPlay(play: TacticalPlay) {
-        tacticalPlaysList.add(play)
-    }
+    fun getAverageReceptionEfficiency(): Float = 0.85f
 }

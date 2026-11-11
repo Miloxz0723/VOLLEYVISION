@@ -9,9 +9,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import camiloo.com.example.volleyvision.ui.theme.VolleyVisionTheme
+import java.util.UUID
 
-// Se agregó CAMERA al final
-enum class Screen { WELCOME, LOGIN, REGISTER, HOME, NEW_MATCH, SCOREBOARD, PLAYER_HOME, CAMERA }
+enum class Screen { WELCOME, LOGIN, REGISTER, HOME, NEW_MATCH, SCOREBOARD, PLAYER_HOME, ADD_PLAYER, CAMERA }
 
 class MainActivity : ComponentActivity() {
 
@@ -38,9 +38,14 @@ class MainActivity : ComponentActivity() {
                     )
                     Screen.REGISTER -> RegisterScreen(
                         onNavigateToLogin = { currentScreen = Screen.LOGIN },
-                        onRegisterSuccess = { name, club, role ->
-                            viewModel.setUserData(name, club, role)
-                            currentScreen = if (role == "Jugador") Screen.PLAYER_HOME else Screen.HOME
+                        onRegisterSuccess = { email, pass, name, club, role, onComplete ->
+                            viewModel.registerNewAccount(email, pass, name, club, role) { success, err ->
+                                // Apaga el indicador de carga en el formulario
+                                onComplete(success, err)
+                                if (success) {
+                                    currentScreen = if (role == "Jugador") Screen.PLAYER_HOME else Screen.HOME
+                                }
+                            }
                         },
                         onBackToWelcome = { currentScreen = Screen.WELCOME }
                     )
@@ -59,23 +64,21 @@ class MainActivity : ComponentActivity() {
                     Screen.NEW_MATCH -> NewMatchScreen(
                         clubName = viewModel.clubName.value,
                         onBackToHome = { currentScreen = Screen.HOME },
-                        // Ahora recibe 5 datos: el último es el modo de registro elegido
                         onMatchCreated = { rival, date, loc, type, mode ->
-                            viewModel.addMatch(rival, date, loc, type)
+                            viewModel.addMatch(rival, date, loc, type, mode)
                             currentRivalName = if (rival.isBlank()) "VISITANTE" else rival
-                            // Solución Punto 5: Vuelve a la Home al agendar partido
-                            currentScreen = Screen.HOME
+
+                            if (mode.contains("Agendar", ignoreCase = true)) {
+                                currentScreen = Screen.HOME
+                            } else {
+                                currentScreen = Screen.SCOREBOARD
+                            }
                         }
-                    )
-                    Screen.CAMERA -> CameraScreen(
-                        onClose = { currentScreen = Screen.HOME }
                     )
                     Screen.SCOREBOARD -> ScoreboardScreen(
                         localTeamName = viewModel.clubName.value,
                         rivalName = currentRivalName,
-                        onNavigateToTactics = { currentScreen = Screen.HOME },
                         onPointScoredByAction = { action ->
-                            // Asigna el punto al jugador ubicado en la zona correspondiente (P1 a P6)
                             viewModel.recordPointForPlayerByAction(action)
                         },
                         onFinishMatch = { homePoints, guestPoints, homeSets, guestSets, attackPts, blockPts, servePts ->
@@ -89,6 +92,24 @@ class MainActivity : ComponentActivity() {
                     Screen.PLAYER_HOME -> PlayerHomeScreen(
                         playerName = viewModel.userName.value,
                         clubName = viewModel.clubName.value
+                    )
+                    Screen.ADD_PLAYER -> AddPlayerSheet(
+                        onDismiss = { currentScreen = Screen.HOME },
+                        onSave = { newPlayerForm ->
+                            val newPlayer = PlayerMember(
+                                id = UUID.randomUUID().toString(),
+                                name = newPlayerForm.name,
+                                dorsal = newPlayerForm.number.toString(),
+                                position = newPlayerForm.position.label,
+                                isTitular = true
+                            )
+                            viewModel.playerList.add(newPlayer)
+                            FirebaseService().savePlayer(newPlayer)
+                            currentScreen = Screen.HOME
+                        }
+                    )
+                    Screen.CAMERA -> CameraScreen(
+                        onClose = { currentScreen = Screen.HOME }
                     )
                 }
             }

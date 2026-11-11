@@ -1,73 +1,96 @@
 package camiloo.com.example.volleyvision
 
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 
 class FirebaseService {
-    private val db = FirebaseFirestore.getInstance()
 
-    // 1. Guardar/Actualizar un partido en Firestore usando su ID
-    fun saveMatch(match: MatchEvent, onComplete: (Boolean) -> Unit = {}) {
-        db.collection("matches")
-            .document(match.id)
-            .set(match)
-            .addOnSuccessListener { onComplete(true) }
-            .addOnFailureListener { onComplete(false) }
-    }
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
-    // 2. Escuchar cambios de partidos en TIEMPO REAL
-    fun listenToMatches(onMatchesUpdated: (List<MatchEvent>) -> Unit) {
-        db.collection("matches")
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) return@addSnapshotListener
-                val matches = snapshot.toObjects(MatchEvent::class.java)
-                onMatchesUpdated(matches)
+    // Registrar Usuario en Auth y guardar perfil en Firestore
+    fun registerUser(
+        email: String,
+        pass: String,
+        name: String,
+        club: String,
+        role: String,
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        auth.createUserWithEmailAndPassword(email, pass)
+            .addOnSuccessListener { result ->
+                val uid = result.user?.uid ?: ""
+                val userData = hashMapOf(
+                    "uid" to uid,
+                    "name" to name,
+                    "club" to club,
+                    "role" to role,
+                    "email" to email
+                )
+                db.collection("users").document(uid).set(userData)
+                    .addOnSuccessListener { onResult(true, null) }
+                    .addOnFailureListener { e -> onResult(false, e.localizedMessage) }
+            }
+            .addOnFailureListener { e ->
+                onResult(false, e.localizedMessage)
             }
     }
 
-    // 3. Registrar un jugador en Firestore usando su ID
-    fun savePlayer(player: PlayerMember, onComplete: (Boolean) -> Unit = {}) {
-        db.collection("players")
-            .document(player.id)
-            .set(player)
-            .addOnSuccessListener { onComplete(true) }
-            .addOnFailureListener { onComplete(false) }
-    }
-
-    // 4. Escuchar la plantilla de jugadores en TIEMPO REAL
-    fun listenToPlayers(onPlayersUpdated: (List<PlayerMember>) -> Unit) {
-        db.collection("players")
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null) return@addSnapshotListener
-                val players = snapshot.toObjects(PlayerMember::class.java)
-                onPlayersUpdated(players)
+    // Escuchar cambios de datos de usuario
+    fun listenToUserProfile(onUpdate: (String, String, String) -> Unit) {
+        val uid = auth.currentUser?.uid ?: return
+        db.collection("users").document(uid).addSnapshotListener { snapshot, _ ->
+            if (snapshot != null && snapshot.exists()) {
+                val name = snapshot.getString("name") ?: "Entrenador"
+                val club = snapshot.getString("club") ?: "CV OLÍMPICO"
+                val role = snapshot.getString("role") ?: "Entrenador"
+                onUpdate(name, club, role)
             }
+        }
     }
 
-    // 5. Guardar/Actualizar perfil de usuario en Firestore
-    fun saveUserProfile(name: String, club: String, role: String, onComplete: (Boolean) -> Unit = {}) {
-        val userMap = hashMapOf(
+    // Guardar o actualizar datos de usuario
+    fun saveUserProfile(name: String, club: String, role: String) {
+        val uid = auth.currentUser?.uid ?: return
+        val userData = hashMapOf(
             "name" to name,
             "club" to club,
             "role" to role
         )
-
-        db.collection("users")
-            .document("current_user")
-            .set(userMap)
-            .addOnSuccessListener { onComplete(true) }
-            .addOnFailureListener { onComplete(false) }
+        db.collection("users").document(uid).set(userData, com.google.firebase.firestore.SetOptions.merge())
     }
 
-    // 6. Escuchar los datos del usuario en TIEMPO REAL
-    fun listenToUserProfile(onUserUpdated: (String, String, String) -> Unit) {
-        db.collection("users")
-            .document("current_user")
-            .addSnapshotListener { snapshot, error ->
-                if (error != null || snapshot == null || !snapshot.exists()) return@addSnapshotListener
-                val name = snapshot.getString("name") ?: ""
-                val club = snapshot.getString("club") ?: ""
-                val role = snapshot.getString("role") ?: ""
-                onUserUpdated(name, club, role)
+    // GUARDAR O ACTUALIZAR UN PARTIDO EN LA COLECCIÓN "matches"
+    fun saveMatch(match: MatchEvent) {
+        db.collection("matches")
+            .document(match.id)
+            .set(match)
+    }
+
+    // Escuchar partidos en tiempo real
+    fun listenToMatches(onMatchesReceived: (List<MatchEvent>) -> Unit) {
+        db.collection("matches").addSnapshotListener { snapshot, _ ->
+            if (snapshot != null) {
+                val list = snapshot.toObjects(MatchEvent::class.java)
+                onMatchesReceived(list)
             }
+        }
+    }
+
+    // GUARDAR JUGADOR EN LA COLECCIÓN "players"
+    fun savePlayer(player: PlayerMember) {
+        db.collection("players")
+            .document(player.id)
+            .set(player)
+    }
+
+    // Escuchar jugadores en tiempo real
+    fun listenToPlayers(onPlayersReceived: (List<PlayerMember>) -> Unit) {
+        db.collection("players").addSnapshotListener { snapshot, _ ->
+            if (snapshot != null) {
+                val list = snapshot.toObjects(PlayerMember::class.java)
+                onPlayersReceived(list)
+            }
+        }
     }
 }
