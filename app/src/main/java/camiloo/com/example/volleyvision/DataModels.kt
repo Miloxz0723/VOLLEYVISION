@@ -4,7 +4,8 @@ enum class AppScreen {
     HOME,
     NEW_MATCH,
     SCOREBOARD,
-    TACTICAL_BOARD
+    TACTICAL_BOARD,
+    CAMERA
 }
 
 // 1. MODELO DE ESTADÍSTICAS DEL PARTIDO

@@ -2,7 +2,6 @@ package camiloo.com.example.volleyvision
 
 import android.widget.Toast
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -24,7 +23,8 @@ import camiloo.com.example.volleyvision.ui.theme.*
 fun NewMatchScreen(
     clubName: String = "CV Olímpico",
     onBackToHome: () -> Unit = {},
-    onMatchCreated: (String, String, String, String) -> Unit = { _, _, _, _ -> }
+    // CAMBIO 1: ahora tiene 5 datos (el último es el modo de registro)
+    onMatchCreated: (String, String, String, String, String) -> Unit = { _, _, _, _, _ -> }
 ) {
     var rivalName by remember { mutableStateOf("") }
     var matchDate by remember { mutableStateOf("Hoy, 18:30h") }
@@ -81,7 +81,6 @@ fun NewMatchScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("LOCAL", color = Color(0xFF64B5F6), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Text(clubName, color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-
                 }
 
                 Text("VS", color = NeonGreen, fontSize = 20.sp, fontWeight = FontWeight.Black)
@@ -89,7 +88,6 @@ fun NewMatchScreen(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("VISITA", color = Color(0xFF64B5F6), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     Text(if (rivalName.isEmpty()) "Rival" else rivalName, color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-
                 }
             }
         }
@@ -177,7 +175,7 @@ fun NewMatchScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Opción 3: Solo Agendar Partido (NUEVO)
+        // Opción 3: Solo Agendar Partido
         ModeOptionCard(
             title = "Solo Agendar Partido",
             subtitle = "Publicar evento en la agenda de los jugadores para asistencia",
@@ -218,8 +216,15 @@ fun NewMatchScreen(
             onClick = {
                 val rival = if (rivalName.isEmpty()) "Rival por Definir" else rivalName
 
+                // CAMBIO 2: convertimos el número del modo en el texto que lee MainActivity
+                val modeText = when (recordingMode) {
+                    1 -> "Grabar Video + Anotar"
+                    3 -> "Solo Agendar Partido"
+                    else -> "Solo Marcador y Puntos"
+                }
+
                 // Llama al callback para guardar los datos ingresados en el ViewModel
-                onMatchCreated(rival, matchDate, location, matchType)
+                onMatchCreated(rival, matchDate, location, matchType, modeText)
 
                 if (recordingMode == 3) {
                     Toast.makeText(context, "Partido contra $rival agendado 📅", Toast.LENGTH_LONG).show()
