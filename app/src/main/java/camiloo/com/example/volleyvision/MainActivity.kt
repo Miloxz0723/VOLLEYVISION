@@ -63,12 +63,8 @@ class MainActivity : ComponentActivity() {
                         onMatchCreated = { rival, date, loc, type, mode ->
                             viewModel.addMatch(rival, date, loc, type)
                             currentRivalName = if (rival.isBlank()) "VISITANTE" else rival
-                            // Grabar -> cámara | Agendar -> vuelve al inicio | Marcador -> marcador
-                            currentScreen = when {
-                                mode.contains("Grabar") -> Screen.CAMERA
-                                mode.contains("Agendar") -> Screen.HOME
-                                else -> Screen.SCOREBOARD
-                            }
+                            // Solución Punto 5: Vuelve a la Home al agendar partido
+                            currentScreen = Screen.HOME
                         }
                     )
                     Screen.CAMERA -> CameraScreen(
@@ -77,6 +73,11 @@ class MainActivity : ComponentActivity() {
                     Screen.SCOREBOARD -> ScoreboardScreen(
                         localTeamName = viewModel.clubName.value,
                         rivalName = currentRivalName,
+                        onNavigateToTactics = { currentScreen = Screen.HOME },
+                        onPointScoredByAction = { action ->
+                            // Asigna el punto al jugador ubicado en la zona correspondiente (P1 a P6)
+                            viewModel.recordPointForPlayerByAction(action)
+                        },
                         onFinishMatch = { homePoints, guestPoints, homeSets, guestSets, attackPts, blockPts, servePts ->
                             viewModel.finishCurrentMatch(
                                 homePoints, guestPoints, homeSets, guestSets,

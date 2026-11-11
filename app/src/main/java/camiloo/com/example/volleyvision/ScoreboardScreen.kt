@@ -30,6 +30,7 @@ fun ScoreboardScreen(
     localTeamName: String = "CV OLÍMPICO",
     rivalName: String = "VISITANTE",
     onNavigateToTactics: () -> Unit = {},
+    onPointScoredByAction: (String) -> Unit = {}, // Notifica al ViewModel qué acción suma punto
     onFinishMatch: (
         homePoints: Int, guestPoints: Int, homeSets: Int, guestSets: Int,
         attackPts: Int, blockPts: Int, servePts: Int
@@ -82,6 +83,8 @@ fun ScoreboardScreen(
                 "BLOQUEO" -> homeBlockPoints++
                 "SAQUE" -> homeServePoints++
             }
+            // Dispara la asignación automática al jugador posicionado
+            onPointScoredByAction(action)
         } else {
             guestPoints++
         }

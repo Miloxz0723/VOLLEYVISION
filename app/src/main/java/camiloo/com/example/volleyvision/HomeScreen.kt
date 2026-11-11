@@ -1,5 +1,6 @@
 package camiloo.com.example.volleyvision
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,6 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,9 +31,7 @@ import androidx.compose.ui.unit.sp
 import camiloo.com.example.volleyvision.ui.theme.*
 import kotlin.math.roundToInt
 
-// OJO: se eliminó el import "camiloo.com.example.volleyvision.camiloo.com.example.volleyvision.AddPlayerSheet".
-// AddPlayer.kt debe tener como primera línea: package camiloo.com.example.volleyvision
-// y así no hace falta importar nada (mismo paquete).
+data class TacticalLinePath(val points: List<Offset>, val color: Color = Color.Yellow)
 
 @Composable
 fun HomeScreen(
@@ -247,7 +249,7 @@ fun CoachHomeTab(
                         Spacer(modifier = Modifier.height(6.dp))
                         Text("$clubName vs ${match.rivalName}", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("📍 ${match.location} • 📅 ${match.date}", color = TextGray, fontSize = 12.sp)
+                        Text("📍 ${match.location} | 📅 ${match.date}", color = TextGray, fontSize = 12.sp)
                     }
                 }
             }
@@ -259,6 +261,14 @@ fun CoachHomeTab(
 fun CoachTacticsTab() {
     var selectedTab by remember { mutableStateOf("K1") }
     var selectedRotation by remember { mutableStateOf("Rotación 1 (P1)") }
+
+    // ESTADOS PARA HERRAMIENTAS INTERACTIVAS (BALÓN Y DIBUJO DE ATAQUE)
+    var selectedToolIndex by remember { mutableIntStateOf(0) } // 0: Mover, 1: Ataque, 2: Balón, 3: Borrar
+    var isBallVisible by remember { mutableStateOf(false) }
+    var ballOffset by remember { mutableStateOf(Offset(140f, 150f)) }
+
+    val attackLines = remember { mutableStateListOf<TacticalLinePath>() }
+    val currentPathPoints = remember { mutableStateListOf<Offset>() }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -345,6 +355,7 @@ fun CoachTacticsTab() {
 
         Spacer(modifier = Modifier.height(14.dp))
 
+        // CANCHA INTERACTIVA DE VOLEIBOL
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -353,7 +364,29 @@ fun CoachTacticsTab() {
                 .border(2.dp, Color.White, shape = RoundedCornerShape(14.dp))
                 .clip(RoundedCornerShape(14.dp))
                 .padding(10.dp)
+                .pointerInput(selectedToolIndex) {
+                    // DIBUJAR LÍNEAS CUANDO ESTÁ SELECCIONADA LA HERRAMIENTA "Ataque" (Índice 1)
+                    if (selectedToolIndex == 1) {
+                        detectDragGestures(
+                            onDragStart = { offset ->
+                                currentPathPoints.clear()
+                                currentPathPoints.add(offset)
+                            },
+                            onDrag = { change, _ ->
+                                change.consume()
+                                currentPathPoints.add(change.position)
+                            },
+                            onDragEnd = {
+                                if (currentPathPoints.isNotEmpty()) {
+                                    attackLines.add(TacticalLinePath(currentPathPoints.toList()))
+                                    currentPathPoints.clear()
+                                }
+                            }
+                        )
+                    }
+                }
         ) {
+            // LÍNEA DE RED
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -362,16 +395,64 @@ fun CoachTacticsTab() {
                     .align(Alignment.TopCenter)
             )
 
+            // CANVAS PARA TRAZAR LÍNEAS DE ATAQUE DIBUJADAS
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                for (line in attackLines) {
+                    val path = Path().apply {
+                        line.points.forEachIndexed { index, point ->
+                            if (index == 0) moveTo(point.x, point.y)
+                            else lineTo(point.x, point.y)
+                        }
+                    }
+                    drawPath(path, color = line.color, style = Stroke(width = 8f, cap = StrokeCap.Round))
+                }
+
+                if (currentPathPoints.isNotEmpty()) {
+                    val path = Path().apply {
+                        currentPathPoints.forEachIndexed { index, point ->
+                            if (index == 0) moveTo(point.x, point.y)
+                            else lineTo(point.x, point.y)
+                        }
+                    }
+                    drawPath(path, color = Color.Yellow, style = Stroke(width = 8f, cap = StrokeCap.Round))
+                }
+            }
+
+            // FICHA DE JUGADORES ARRASTRABLES
             TacticalPlayerToken("10", "PUNTA", initialOffset = Offset(20f, 40f))
             TacticalPlayerToken("7", "CENTRAL", initialOffset = Offset(130f, 40f))
             TacticalPlayerToken("4", "COLOC", initialOffset = Offset(240f, 40f))
             TacticalPlayerToken("2", "LÍBERO", initialOffset = Offset(20f, 180f))
             TacticalPlayerToken("9", "RECEP 2", initialOffset = Offset(130f, 220f))
             TacticalPlayerToken("15", "OPUESTO", initialOffset = Offset(240f, 180f))
+
+            // BALÓN MOSTRABLE Y ARRASTRABLE CON EL DEDO
+            if (isBallVisible) {
+                Box(
+                    modifier = Modifier
+                        .offset { IntOffset(ballOffset.x.roundToInt(), ballOffset.y.roundToInt()) }
+                        .size(38.dp)
+                        .background(Color(0xFFFFEB3B), shape = CircleShape)
+                        .border(2.dp, Color.Black, CircleShape)
+                        .pointerInput(Unit) {
+                            detectDragGestures { change, dragAmount ->
+                                change.consume()
+                                ballOffset = Offset(
+                                    x = (ballOffset.x + dragAmount.x).coerceIn(0f, 800f),
+                                    y = (ballOffset.y + dragAmount.y).coerceIn(0f, 1000f)
+                                )
+                            }
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("🏐", fontSize = 22.sp)
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
+        // BARRA INFERIOR DE HERRAMIENTAS INTERACTIVAS
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -380,16 +461,25 @@ fun CoachTacticsTab() {
                 .padding(6.dp),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-            TacticalToolItem("🖐️ Mover", isSelected = true)
-            TacticalToolItem("📈 Ataque", isSelected = false)
-            TacticalToolItem("🏐 Balón", isSelected = false)
-            TacticalToolItem("⌫ Borrar", isSelected = false)
+            TacticalToolItem("🖐️ Mover", isSelected = selectedToolIndex == 0) {
+                selectedToolIndex = 0
+            }
+            TacticalToolItem("📈 Ataque", isSelected = selectedToolIndex == 1) {
+                selectedToolIndex = 1
+            }
+            TacticalToolItem("🏐 Balón", isSelected = selectedToolIndex == 2) {
+                selectedToolIndex = 2
+                isBallVisible = !isBallVisible
+            }
+            TacticalToolItem("⌫ Borrar", isSelected = false) {
+                attackLines.clear()
+            }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
         Button(
-            onClick = { /* Guardar jugada */ },
+            onClick = { /* Guardar jugada táctica */ },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
@@ -450,10 +540,11 @@ fun TacticalPlayerToken(
 }
 
 @Composable
-fun TacticalToolItem(label: String, isSelected: Boolean) {
+fun TacticalToolItem(label: String, isSelected: Boolean, onClick: () -> Unit) {
     Surface(
         color = if (isSelected) Color(0xFF065F46) else Color.Transparent,
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.clickable { onClick() }
     ) {
         Text(
             text = label,

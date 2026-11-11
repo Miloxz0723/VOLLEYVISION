@@ -8,7 +8,7 @@ enum class AppScreen {
     CAMERA
 }
 
-// 1. MODELO DE ESTADÍSTICAS DETALLADAS POR ACCIÓN
+// 1. MODELO DE ESTADÍSTICAS DEL PARTIDO
 data class MatchStatsSummary(
     var attackPoints: Int = 0,
     var blockPoints: Int = 0,
@@ -39,16 +39,7 @@ data class MatchEvent(
     var statsSummary: MatchStatsSummary = MatchStatsSummary()
 )
 
-// 3. MODELO DE JUGADOR / PLANTILLA
-data class PlayerMember(
-    var id: String = java.util.UUID.randomUUID().toString(),
-    var dorsal: String = "",
-    var name: String = "",
-    var position: String = "",
-    var isTitular: Boolean = true,
-    var stats: PlayerStats = PlayerStats()
-)
-
+// 3. MODELO DE ESTADÍSTICAS INDIVIDUALES DE JUGADOR
 data class PlayerStats(
     var matchesPlayed: Int = 0,
     var attackPoints: Int = 0,
@@ -56,9 +47,23 @@ data class PlayerStats(
     var acePoints: Int = 0,
     var serveErrors: Int = 0,
     var receptionErrors: Int = 0
+) {
+    val totalPoints: Int
+        get() = attackPoints + blockPoints + acePoints
+}
+
+// 4. MODELO DE JUGADOR CON ZONA EN CANCHA
+data class PlayerMember(
+    var id: String = java.util.UUID.randomUUID().toString(),
+    var dorsal: String = "",
+    var name: String = "",
+    var position: String = "",
+    var currentZone: Int = 1, // Posición P1 a P6
+    var isTitular: Boolean = true,
+    var stats: PlayerStats = PlayerStats()
 )
 
-// 4. MODELO DE JUGADA TÁCTICA 2D
+// 5. MODELO DE JUGADA TÁCTICA
 data class TacticalPlay(
     var id: String = java.util.UUID.randomUUID().toString(),
     var title: String = "",
