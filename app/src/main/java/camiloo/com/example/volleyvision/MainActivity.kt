@@ -10,7 +10,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import camiloo.com.example.volleyvision.ui.theme.VolleyVisionTheme
 
-enum class Screen { WELCOME, LOGIN, REGISTER, HOME, NEW_MATCH, SCOREBOARD, PLAYER_HOME }
+// Se agregó CAMERA al final
+enum class Screen { WELCOME, LOGIN, REGISTER, HOME, NEW_MATCH, SCOREBOARD, PLAYER_HOME, CAMERA }
 
 class MainActivity : ComponentActivity() {
 
@@ -58,11 +59,20 @@ class MainActivity : ComponentActivity() {
                     Screen.NEW_MATCH -> NewMatchScreen(
                         clubName = viewModel.clubName.value,
                         onBackToHome = { currentScreen = Screen.HOME },
-                        onMatchCreated = { rival, date, loc, type ->
+                        // Ahora recibe 5 datos: el último es el modo de registro elegido
+                        onMatchCreated = { rival, date, loc, type, mode ->
                             viewModel.addMatch(rival, date, loc, type)
                             currentRivalName = if (rival.isBlank()) "VISITANTE" else rival
-                            currentScreen = Screen.SCOREBOARD
+                            // Grabar -> cámara | Agendar -> vuelve al inicio | Marcador -> marcador
+                            currentScreen = when {
+                                mode.contains("Grabar") -> Screen.CAMERA
+                                mode.contains("Agendar") -> Screen.HOME
+                                else -> Screen.SCOREBOARD
+                            }
                         }
+                    )
+                    Screen.CAMERA -> CameraScreen(
+                        onClose = { currentScreen = Screen.HOME }
                     )
                     Screen.SCOREBOARD -> ScoreboardScreen(
                         localTeamName = viewModel.clubName.value,

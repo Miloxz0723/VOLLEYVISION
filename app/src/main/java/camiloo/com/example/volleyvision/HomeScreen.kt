@@ -9,6 +9,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -24,6 +26,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import camiloo.com.example.volleyvision.ui.theme.*
 import kotlin.math.roundToInt
+
+// OJO: se eliminó el import "camiloo.com.example.volleyvision.camiloo.com.example.volleyvision.AddPlayerSheet".
+// AddPlayer.kt debe tener como primera línea: package camiloo.com.example.volleyvision
+// y así no hace falta importar nada (mismo paquete).
 
 @Composable
 fun HomeScreen(
@@ -461,13 +467,37 @@ fun TacticalToolItem(label: String, isSelected: Boolean) {
 
 @Composable
 fun CoachClubTab(clubName: String, playerList: List<PlayerMember>) {
+
+    // El formulario empieza cerrado.
+    var showAddPlayer by remember { mutableStateOf(false) }
+
+    // Jugadores nuevos añadidos desde esta pantalla.
+    var newPlayers by remember { mutableStateOf(listOf<PlayerMember>()) }
+
+    // Junta los jugadores que ya existían con los nuevos.
+    val allPlayers = playerList + newPlayers
+
     Column {
         Text("👥  PLANTILLA DEL CLUB", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Text("Gestión de la nómina de jugadores de $clubName", color = TextGray, fontSize = 12.sp)
+        Text("Gestión de los jugadores de $clubName", color = TextGray, fontSize = 12.sp)
+
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(
+            onClick = { showAddPlayer = true },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = NeonGreen),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null, tint = BgMain)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Añadir Jugador", color = BgMain, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+        }
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        if (playerList.isEmpty()) {
+        if (allPlayers.isEmpty()) {
             Surface(
                 color = CardBg,
                 shape = RoundedCornerShape(14.dp),
@@ -482,11 +512,28 @@ fun CoachClubTab(clubName: String, playerList: List<PlayerMember>) {
                 )
             }
         } else {
-            playerList.forEach { player ->
+            allPlayers.forEach { player ->
                 PlayerListItem(dorsal = player.dorsal, name = player.name, position = player.position, isTitular = player.isTitular)
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
+    }
+
+    // Formulario (panel que sube desde abajo).
+    if (showAddPlayer) {
+        AddPlayerSheet( //LLama a AddPlayerSheet (la otra screen)
+            onDismiss = { showAddPlayer = false },
+            onSave = { form ->
+                val player = PlayerMember(
+                    dorsal = form.number.toString(),
+                    name = form.name,
+                    position = form.position.label,
+                    isTitular = true
+                )
+                newPlayers = newPlayers + player
+                showAddPlayer = false
+            }
+        )
     }
 }
 
