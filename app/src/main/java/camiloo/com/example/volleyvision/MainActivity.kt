@@ -23,6 +23,7 @@ class MainActivity : ComponentActivity() {
             VolleyVisionTheme {
                 var currentScreen by rememberSaveable { mutableStateOf(Screen.WELCOME) }
                 var currentRivalName by rememberSaveable { mutableStateOf("RIVAL") }
+                var cameraReturnTo by rememberSaveable { mutableStateOf(Screen.HOME) }
 
                 when (currentScreen) {
                     Screen.WELCOME -> WelcomeScreen(
@@ -59,7 +60,11 @@ class MainActivity : ComponentActivity() {
                         serveEff = viewModel.getAverageServeEfficiency(),
                         blockEff = viewModel.getAverageBlockEfficiency(),
                         receptionEff = viewModel.getAverageReceptionEfficiency(),
-                        onNavigateToNewMatch = { currentScreen = Screen.NEW_MATCH }
+                        onNavigateToNewMatch = { currentScreen = Screen.NEW_MATCH },
+                        onNavigateToCamera = {
+                            cameraReturnTo = Screen.HOME
+                            currentScreen = Screen.CAMERA
+                        }
                     )
                     Screen.NEW_MATCH -> NewMatchScreen(
                         clubName = viewModel.clubName.value,
@@ -68,10 +73,20 @@ class MainActivity : ComponentActivity() {
                             viewModel.addMatch(rival, date, loc, type, mode)
                             currentRivalName = if (rival.isBlank()) "VISITANTE" else rival
 
-                            if (mode.contains("Agendar", ignoreCase = true)) {
-                                currentScreen = Screen.HOME
-                            } else {
-                                currentScreen = Screen.SCOREBOARD
+                            when {
+                                // Solo Agendar Partido -> guarda y vuelve al inicio
+                                mode.contains("Agendar", ignoreCase = true) -> {
+                                    currentScreen = Screen.HOME
+                                }
+                                // Grabar Video  -> abre la cámara, y al cerrarla va al marcador
+                                mode.contains("Grabar", ignoreCase = true) -> {
+                                    cameraReturnTo = Screen.SCOREBOARD
+                                    currentScreen = Screen.CAMERA
+                                }
+                                // Solo Marcador y Puntos -> directo al marcador
+                                else -> {
+                                    currentScreen = Screen.SCOREBOARD
+                                }
                             }
                         }
                     )
@@ -109,7 +124,8 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                     Screen.CAMERA -> CameraScreen(
-                        onClose = { currentScreen = Screen.HOME }
+                        // Antes volvía siempre a HOME. Ahora vuelve a donde guardamos en cameraReturnTo.
+                        onClose = { currentScreen = cameraReturnTo }
                     )
                 }
             }

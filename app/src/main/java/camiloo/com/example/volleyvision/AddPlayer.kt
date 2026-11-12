@@ -30,7 +30,7 @@ enum class PlayerPosition(val label: String) {
     LIBERO("Líbero")
 }
 
-data class NewPlayerForm( //Una caja que agrupa los datos del jugador
+data class NewPlayerForm( // Agrupa los datos del jugador
     val photoUri: Uri?, // ? Significa que el dato puede ser null (no tiene foto, altura, etc)
     val name: String,
     val number: Int,
@@ -40,7 +40,7 @@ data class NewPlayerForm( //Una caja que agrupa los datos del jugador
 )
 
 @OptIn(ExperimentalMaterial3Api::class) //Se guarda como experimental se puede decir si,
-@Composable  //puede cambiar en el futuro pero quiero usarlo
+@Composable  //puede cambiar en el futuro
 fun AddPlayerSheet(
     onDismiss: () -> Unit,
     onSave: (NewPlayerForm) -> Unit
@@ -51,8 +51,8 @@ fun AddPlayerSheet(
     var position by remember { mutableStateOf(PlayerPosition.PUNTA) }
     var height by remember { mutableStateOf("") }
     var weight by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) } //Si no estuviera la pantalla no se actualiza
-    var showError by remember { mutableStateOf(false) } //La pantalla se actualiza
+    var expanded by remember { mutableStateOf(false) }
+    var showError by remember { mutableStateOf(false) }
 
     val photoPicker = rememberLauncherForActivityResult( //Le dice a Android que abra la galería para la foto
         ActivityResultContracts.PickVisualMedia()
@@ -104,7 +104,7 @@ fun AddPlayerSheet(
 
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it }, // cada vez que el usuario escribe, guarda el texto nuevo
+                onValueChange = { name = it }, // guarda el texto nuevo
                 label = { Text("Nombre y apellido") },
                 singleLine = true,  // una sola línea (no deja dar Enter)
                 isError = showError && name.isBlank(), // Da error si intentó guardar Y está vacío
@@ -122,30 +122,29 @@ fun AddPlayerSheet(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Dropdown de posición
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
+                ExposedDropdownMenuBox( //Caja de posiciones
+                    expanded = expanded, //True o false (si está abierto o cerrado)
                     onExpandedChange = { expanded = it },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f) //Reparte el tamaño del dorsal y la posición
                 ) {
                     OutlinedTextField(
-                        value = position.label,
-                        onValueChange = {},
-                        readOnly = true,
+                        value = position.label, //Muestra el texto con la posición
+                        onValueChange = {}, //Vacio (Cuando el usuario escribe)
+                        readOnly = true, //Solo lectura
                         label = { Text("Posición") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                        modifier = Modifier.menuAnchor()
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) }, //La flechita gira hacia arriba cuando esstá open el menú
+                        modifier = Modifier.menuAnchor() //Hace que se abra pegado a la caja
                     )
                     ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        expanded = expanded, //Se expande
+                        onDismissRequest = { expanded = false } //Si toca fuera del menú se cierra
                     ) {
-                        PlayerPosition.entries.forEach { option ->
+                        PlayerPosition.entries.forEach { option -> //Llama las op punta, lib, colo
                             DropdownMenuItem(
-                                text = { Text(option.label) },
+                                text = { Text(option.label) }, //Crea fila con las opciones
                                 onClick = {
-                                    position = option
-                                    expanded = false
+                                    position = option //Guarda la posicón elegida
+                                    expanded = false //Cierra el menú
                                 }
                             )
                         }
@@ -176,20 +175,20 @@ fun AddPlayerSheet(
 
             Button(
                 onClick = {
-                    if (name.isBlank() || number.isBlank()) {
+                    if (name.isBlank() || number.isBlank()) { //Revisa que no estén vacios
                         showError = true
                     } else {
                         onSave(
                             NewPlayerForm(
                                 photoUri = photoUri,
-                                name = name.trim(),
-                                number = number.toInt(),
+                                name = name.trim(), //Quita espacios al inicio y al final
+                                number = number.toInt(), //Convierte texto a número entero
                                 position = position,
-                                heightM = height.toDoubleOrNull(),
-                                weightKg = weight.toDoubleOrNull()
+                                heightM = height.toDoubleOrNull(), //Texto  a decimales (Double)
+                                weightKg = weight.toDoubleOrNull() //Devuelve null
                             )
                         )
-                        onDismiss()
+                        onDismiss() //Cierra el panel
                     }
                 },
                 modifier = Modifier.fillMaxWidth()

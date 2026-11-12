@@ -46,7 +46,7 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-@SuppressLint("MissingPermission")
+
 @Composable
 fun CameraScreen(onClose: () -> Unit) {
     val context = LocalContext.current
@@ -82,8 +82,8 @@ fun CameraScreen(onClose: () -> Unit) {
     LaunchedEffect(isRecording) {
         seconds = 0
         while (isRecording) {
-            delay(1000)
-            seconds++
+            delay(1000) //Espera 1 segundo pa subir 1
+            seconds++ //Sube 1
         }
     }
 
@@ -140,22 +140,22 @@ fun CameraScreen(onClose: () -> Unit) {
 
         if (hasPermission) {
             AndroidView(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize(), //Ocupa toda la pantalla
                 factory = { ctx ->
                     val previewView = PreviewView(ctx)
                     val providerFuture = ProcessCameraProvider.getInstance(ctx)
                     providerFuture.addListener({
-                        val provider = providerFuture.get()
-                        cameraProvider = provider
+                        val provider = providerFuture.get() //Permiso de la cámara
+                        cameraProvider = provider //Se guarda para apagarla después
 
                         val preview = Preview.Builder().build().also {
                             it.setSurfaceProvider(previewView.surfaceProvider)
                         }
 
                         val recorder = Recorder.Builder()
-                            .setQualitySelector(
+                            .setQualitySelector( //Elige Calidad
                                 QualitySelector.from(
-                                    Quality.HD,
+                                    Quality.HD, //Estándar de 720p
                                     FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)
                                 )
                             )
@@ -165,16 +165,16 @@ fun CameraScreen(onClose: () -> Unit) {
                         provider.unbindAll()
                         provider.bindToLifecycle(
                             lifecycleOwner,
-                            CameraSelector.DEFAULT_BACK_CAMERA,
-                            preview,
-                            vc
+                            CameraSelector.DEFAULT_BACK_CAMERA, //Cámara trasera
+                            preview, //Vista previa
+                            vc //Grabar
                         )
                         videoCapture = vc
                     }, ContextCompat.getMainExecutor(ctx))
                     previewView
                 }
             )
-        } else {
+        } else { //Si no dan permisos
             Text(
                 "Necesito permiso de cámara y micrófono para grabar",
                 color = Color.White,
@@ -184,7 +184,7 @@ fun CameraScreen(onClose: () -> Unit) {
             )
         }
 
-        // Botón cerrar (arriba a la izquierda)
+        // Botón cerrar
         Button(
             onClick = {
                 if (isRecording) {
@@ -200,7 +200,7 @@ fun CameraScreen(onClose: () -> Unit) {
                 .padding(16.dp)
         ) { Text("Cerrar", color = Color.White) }
 
-        // Cronómetro (arriba al centro)
+        // Cronómetro
         if (isRecording) {
             Text(
                 text = "● REC  %02d:%02d".format(seconds / 60, seconds % 60),
@@ -209,19 +209,19 @@ fun CameraScreen(onClose: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 24.dp)
+                    .padding(top = 24.dp) //Espacio a arriba
                     .background(Color(0xCCD32F2F), RoundedCornerShape(8.dp))
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             )
         }
 
-        // Botón grabar / detener (abajo al centro)
+        // Botón grabar
         if (hasPermission) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 32.dp)
-                    .size(76.dp)
+                    .padding(bottom = 32.dp) //Espacio libre al borde abajo
+                    .size(76.dp) //Tamaño Botón
                     .clip(CircleShape)
                     .border(4.dp, Color.White, CircleShape)
                     .clickable { if (isRecording) stopRecording() else startRecording() },
@@ -229,8 +229,8 @@ fun CameraScreen(onClose: () -> Unit) {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(if (isRecording) 28.dp else 56.dp)
-                        .clip(if (isRecording) RoundedCornerShape(6.dp) else CircleShape)
+                        .size(if (isRecording) 28.dp else 56.dp) //Botón Rojo
+                        .clip(if (isRecording) RoundedCornerShape(6.dp) else CircleShape)  //Circulo - Cuadrado
                         .background(Color(0xFFE53935))
                 )
             }

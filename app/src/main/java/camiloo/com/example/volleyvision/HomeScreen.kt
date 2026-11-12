@@ -1,6 +1,5 @@
 package camiloo.com.example.volleyvision
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -19,9 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -30,8 +26,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import camiloo.com.example.volleyvision.ui.theme.*
 import kotlin.math.roundToInt
-
-data class TacticalLinePath(val points: List<Offset>, val color: Color = Color.Yellow)
 
 @Composable
 fun HomeScreen(
@@ -44,7 +38,8 @@ fun HomeScreen(
     serveEff: Float = 0f,
     blockEff: Float = 0f,
     receptionEff: Float = 0f,
-    onNavigateToNewMatch: () -> Unit = {}
+    onNavigateToNewMatch: () -> Unit = {},
+    onNavigateToCamera: () -> Unit = {} //Ir a la cámara
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var selectedMatchForDetails by remember { mutableStateOf<MatchEvent?>(null) }
@@ -64,8 +59,7 @@ fun HomeScreen(
                 ) {
                     NavItem(icon = "🏐", label = "Inicio", isSelected = selectedTab == 0) { selectedTab = 0 }
                     NavItem(icon = "📹", label = "Grabar", isSelected = selectedTab == 1) {
-                        selectedTab = 1
-                        onNavigateToNewMatch()
+                        onNavigateToCamera()
                     }
                     NavItem(icon = "📐", label = "Pizarra 2D", isSelected = selectedTab == 2) { selectedTab = 2 }
                     NavItem(icon = "📊", label = "Estadísticas", isSelected = selectedTab == 3) { selectedTab = 3 }
@@ -249,7 +243,7 @@ fun CoachHomeTab(
                         Spacer(modifier = Modifier.height(6.dp))
                         Text("$clubName vs ${match.rivalName}", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text("📍 ${match.location} | 📅 ${match.date}", color = TextGray, fontSize = 12.sp)
+                        Text("📍 ${match.location} • 📅 ${match.date}", color = TextGray, fontSize = 12.sp)
                     }
                 }
             }
@@ -261,14 +255,6 @@ fun CoachHomeTab(
 fun CoachTacticsTab() {
     var selectedTab by remember { mutableStateOf("K1") }
     var selectedRotation by remember { mutableStateOf("Rotación 1 (P1)") }
-
-    // ESTADOS PARA HERRAMIENTAS INTERACTIVAS (BALÓN Y DIBUJO DE ATAQUE)
-    var selectedToolIndex by remember { mutableIntStateOf(0) } // 0: Mover, 1: Ataque, 2: Balón, 3: Borrar
-    var isBallVisible by remember { mutableStateOf(false) }
-    var ballOffset by remember { mutableStateOf(Offset(140f, 150f)) }
-
-    val attackLines = remember { mutableStateListOf<TacticalLinePath>() }
-    val currentPathPoints = remember { mutableStateListOf<Offset>() }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -355,7 +341,6 @@ fun CoachTacticsTab() {
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // CANCHA INTERACTIVA DE VOLEIBOL
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -364,29 +349,7 @@ fun CoachTacticsTab() {
                 .border(2.dp, Color.White, shape = RoundedCornerShape(14.dp))
                 .clip(RoundedCornerShape(14.dp))
                 .padding(10.dp)
-                .pointerInput(selectedToolIndex) {
-                    // DIBUJAR LÍNEAS CUANDO ESTÁ SELECCIONADA LA HERRAMIENTA "Ataque" (Índice 1)
-                    if (selectedToolIndex == 1) {
-                        detectDragGestures(
-                            onDragStart = { offset ->
-                                currentPathPoints.clear()
-                                currentPathPoints.add(offset)
-                            },
-                            onDrag = { change, _ ->
-                                change.consume()
-                                currentPathPoints.add(change.position)
-                            },
-                            onDragEnd = {
-                                if (currentPathPoints.isNotEmpty()) {
-                                    attackLines.add(TacticalLinePath(currentPathPoints.toList()))
-                                    currentPathPoints.clear()
-                                }
-                            }
-                        )
-                    }
-                }
         ) {
-            // LÍNEA DE RED
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -395,64 +358,16 @@ fun CoachTacticsTab() {
                     .align(Alignment.TopCenter)
             )
 
-            // CANVAS PARA TRAZAR LÍNEAS DE ATAQUE DIBUJADAS
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                for (line in attackLines) {
-                    val path = Path().apply {
-                        line.points.forEachIndexed { index, point ->
-                            if (index == 0) moveTo(point.x, point.y)
-                            else lineTo(point.x, point.y)
-                        }
-                    }
-                    drawPath(path, color = line.color, style = Stroke(width = 8f, cap = StrokeCap.Round))
-                }
-
-                if (currentPathPoints.isNotEmpty()) {
-                    val path = Path().apply {
-                        currentPathPoints.forEachIndexed { index, point ->
-                            if (index == 0) moveTo(point.x, point.y)
-                            else lineTo(point.x, point.y)
-                        }
-                    }
-                    drawPath(path, color = Color.Yellow, style = Stroke(width = 8f, cap = StrokeCap.Round))
-                }
-            }
-
-            // FICHA DE JUGADORES ARRASTRABLES
             TacticalPlayerToken("10", "PUNTA", initialOffset = Offset(20f, 40f))
             TacticalPlayerToken("7", "CENTRAL", initialOffset = Offset(130f, 40f))
             TacticalPlayerToken("4", "COLOC", initialOffset = Offset(240f, 40f))
             TacticalPlayerToken("2", "LÍBERO", initialOffset = Offset(20f, 180f))
             TacticalPlayerToken("9", "RECEP 2", initialOffset = Offset(130f, 220f))
             TacticalPlayerToken("15", "OPUESTO", initialOffset = Offset(240f, 180f))
-
-            // BALÓN MOSTRABLE Y ARRASTRABLE CON EL DEDO
-            if (isBallVisible) {
-                Box(
-                    modifier = Modifier
-                        .offset { IntOffset(ballOffset.x.roundToInt(), ballOffset.y.roundToInt()) }
-                        .size(38.dp)
-                        .background(Color(0xFFFFEB3B), shape = CircleShape)
-                        .border(2.dp, Color.Black, CircleShape)
-                        .pointerInput(Unit) {
-                            detectDragGestures { change, dragAmount ->
-                                change.consume()
-                                ballOffset = Offset(
-                                    x = (ballOffset.x + dragAmount.x).coerceIn(0f, 800f),
-                                    y = (ballOffset.y + dragAmount.y).coerceIn(0f, 1000f)
-                                )
-                            }
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("🏐", fontSize = 22.sp)
-                }
-            }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // BARRA INFERIOR DE HERRAMIENTAS INTERACTIVAS
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -461,25 +376,16 @@ fun CoachTacticsTab() {
                 .padding(6.dp),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-            TacticalToolItem("🖐️ Mover", isSelected = selectedToolIndex == 0) {
-                selectedToolIndex = 0
-            }
-            TacticalToolItem("📈 Ataque", isSelected = selectedToolIndex == 1) {
-                selectedToolIndex = 1
-            }
-            TacticalToolItem("🏐 Balón", isSelected = selectedToolIndex == 2) {
-                selectedToolIndex = 2
-                isBallVisible = !isBallVisible
-            }
-            TacticalToolItem("⌫ Borrar", isSelected = false) {
-                attackLines.clear()
-            }
+            TacticalToolItem("🖐️ Mover", isSelected = true)
+            TacticalToolItem("📈 Ataque", isSelected = false)
+            TacticalToolItem("🏐 Balón", isSelected = false)
+            TacticalToolItem("⌫ Borrar", isSelected = false)
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
         Button(
-            onClick = { /* Guardar jugada táctica */ },
+            onClick = { /* Guardar jugada */ },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(48.dp),
@@ -540,11 +446,10 @@ fun TacticalPlayerToken(
 }
 
 @Composable
-fun TacticalToolItem(label: String, isSelected: Boolean, onClick: () -> Unit) {
+fun TacticalToolItem(label: String, isSelected: Boolean) {
     Surface(
         color = if (isSelected) Color(0xFF065F46) else Color.Transparent,
-        shape = RoundedCornerShape(8.dp),
-        modifier = Modifier.clickable { onClick() }
+        shape = RoundedCornerShape(8.dp)
     ) {
         Text(
             text = label,
@@ -559,19 +464,24 @@ fun TacticalToolItem(label: String, isSelected: Boolean, onClick: () -> Unit) {
 @Composable
 fun CoachClubTab(clubName: String, playerList: List<PlayerMember>) {
 
-    // El formulario empieza cerrado.
+    //ADRIAN
+    // ¿Está abierto el formulario de añadir jugador? Empieza cerrado (false).
     var showAddPlayer by remember { mutableStateOf(false) }
 
-    // Jugadores nuevos añadidos desde esta pantalla.
+    //ADRIAN
+    // Jugadores nuevos añadidos desde esta pantalla (temporal, aún no se guarda en Firebase).
     var newPlayers by remember { mutableStateOf(listOf<PlayerMember>()) }
 
+    //ADRIAN
     // Junta los jugadores que ya existían con los nuevos.
     val allPlayers = playerList + newPlayers
 
     Column {
         Text("👥  PLANTILLA DEL CLUB", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-        Text("Gestión de los jugadores de $clubName", color = TextGray, fontSize = 12.sp)
+        Text("Gestión de la nómina de jugadores de $clubName", color = TextGray, fontSize = 12.sp)
 
+        //ADRIAN
+        // Botón "Añadir Jugador": al tocarlo abre el formulario.
         Spacer(modifier = Modifier.height(12.dp))
         Button(
             onClick = { showAddPlayer = true },
@@ -588,6 +498,8 @@ fun CoachClubTab(clubName: String, playerList: List<PlayerMember>) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        //ADRIAN
+        // Antes era playerList, ahora allPlayers para que incluya los jugadores nuevos.
         if (allPlayers.isEmpty()) {
             Surface(
                 color = CardBg,
@@ -603,6 +515,8 @@ fun CoachClubTab(clubName: String, playerList: List<PlayerMember>) {
                 )
             }
         } else {
+            //ADRIAN
+            // Igual aquí: allPlayers en vez de playerList.
             allPlayers.forEach { player ->
                 PlayerListItem(dorsal = player.dorsal, name = player.name, position = player.position, isTitular = player.isTitular)
                 Spacer(modifier = Modifier.height(8.dp))
@@ -610,10 +524,13 @@ fun CoachClubTab(clubName: String, playerList: List<PlayerMember>) {
         }
     }
 
-    // Formulario (panel que sube desde abajo).
+    //ADRIAN
+    // Formulario (panel que sube desde abajo). Solo se dibuja si showAddPlayer es true.
     if (showAddPlayer) {
-        AddPlayerSheet( //LLama a AddPlayerSheet (la otra screen)
+        AddPlayerSheet(
+            // Al cerrar el panel, lo ponemos en false.
             onDismiss = { showAddPlayer = false },
+            // Al guardar: convertimos el formulario a PlayerMember y lo agregamos a la lista temporal.
             onSave = { form ->
                 val player = PlayerMember(
                     dorsal = form.number.toString(),
@@ -622,7 +539,6 @@ fun CoachClubTab(clubName: String, playerList: List<PlayerMember>) {
                     isTitular = true
                 )
                 newPlayers = newPlayers + player
-                showAddPlayer = false
             }
         )
     }

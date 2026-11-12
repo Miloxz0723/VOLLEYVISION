@@ -75,13 +75,13 @@ fun WelcomeScreen(
             // Título
             Row {
                 Text("Volley ", color = TextWhite, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                Text("App", color = NeonGreen, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                Text("Vision", color = NeonGreen, fontSize = 28.sp, fontWeight = FontWeight.Bold)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "Graba tus partidos, mueve tus rotaciones\ny analiza tu equipo de forma fácil.",
+                text = "Graba tus partidos, mueve tus rotaciones\ny organiza tu equipo de forma fácil.",
                 color = TextGray,
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center
@@ -92,8 +92,8 @@ fun WelcomeScreen(
             // Tarjetas de funciones
             FeatureCard(
                 iconSymbol = "📹",
-                title = "Grabación Inteligente",
-                subtitle = "Auto-tags de saques y remates"
+                title = "Grabación en tiempo Real",
+                subtitle = "Graba y ve la repetición de tus partidos"
             )
 
             Spacer(modifier = Modifier.height(10.dp))
