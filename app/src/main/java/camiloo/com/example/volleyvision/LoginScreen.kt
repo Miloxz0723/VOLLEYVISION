@@ -8,11 +8,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -28,11 +24,13 @@ import camiloo.com.example.volleyvision.ui.theme.*
 @Composable
 fun LoginScreen(
     onNavigateToRegister: () -> Unit,
+    onLoginAttempt: (email: String, pass: String, onComplete: (Boolean, String?) -> Unit) -> Unit = { _, _, cb -> cb(true, null) },
     onNavigateToHome: () -> Unit,
     onBackToWelcome: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
     val fieldColors = OutlinedTextFieldDefaults.colors(
@@ -112,13 +110,26 @@ fun LoginScreen(
 
         Button(
             onClick = {
-                if (email.isNotEmpty() && password.isNotEmpty()) {
-                    Toast.makeText(context, "Bienvenido de nuevo", Toast.LENGTH_SHORT).show()
-                    onNavigateToHome()
-                } else {
+                if (email.isBlank() || password.isBlank()) {
                     Toast.makeText(context, "Por favor completa todos los campos", Toast.LENGTH_SHORT).show()
+                } else {
+                    isLoading = true
+                    onLoginAttempt(email, password) { success, error ->
+                        isLoading = false
+                        if (success) {
+                            Toast.makeText(context, "Bienvenido de nuevo", Toast.LENGTH_SHORT).show()
+                            onNavigateToHome()
+                        } else {
+                            Toast.makeText(
+                                context,
+                                error ?: "Correo o contraseña incorrectos",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
+                    }
                 }
             },
+            enabled = !isLoading,
             colors = ButtonDefaults.buttonColors(containerColor = NeonGreen),
             shape = RoundedCornerShape(14.dp),
             modifier = Modifier
@@ -126,7 +137,7 @@ fun LoginScreen(
                 .height(54.dp)
         ) {
             Text(
-                text = "Ingresar",
+                text = if (isLoading) "Verificando..." else "Ingresar",
                 color = BgMain,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold

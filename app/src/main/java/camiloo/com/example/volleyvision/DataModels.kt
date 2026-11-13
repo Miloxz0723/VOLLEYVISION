@@ -36,7 +36,7 @@ data class MatchEvent(
     var homeSets: Int = 0,
     var guestSets: Int = 0,
     var isFinished: Boolean = false,
-    var statsSummary: MatchStatsSummary = MatchStatsSummary()
+    var statsSummary: MatchStatsSummary? = null
 )
 
 // 3. MODELO DE ESTADÍSTICAS INDIVIDUALES DE JUGADOR
@@ -58,7 +58,7 @@ data class PlayerMember(
     var dorsal: String = "",
     var name: String = "",
     var position: String = "",
-    var currentZone: Int = 1, // Posición P1 a P6
+    var currentZone: Int = 1,
     var isTitular: Boolean = true,
     var stats: PlayerStats = PlayerStats()
 )

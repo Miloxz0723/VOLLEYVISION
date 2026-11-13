@@ -32,8 +32,10 @@ class MainActivity : ComponentActivity() {
                     )
                     Screen.LOGIN -> LoginScreen(
                         onNavigateToRegister = { currentScreen = Screen.REGISTER },
+                        onLoginAttempt = { email, pass, onComplete ->
+                            viewModel.loginAccount(email, pass, onComplete)
+                        },
                         onNavigateToHome = {
-                            viewModel.loadUserData()
                             currentScreen = if (viewModel.userRole.value == "Jugador") Screen.PLAYER_HOME else Screen.HOME
                         },
                         onBackToWelcome = { currentScreen = Screen.WELCOME }
@@ -64,6 +66,9 @@ class MainActivity : ComponentActivity() {
                         onNavigateToCamera = {
                             cameraReturnTo = Screen.HOME
                             currentScreen = Screen.CAMERA
+                        },
+                        onAddPlayer = { newPlayer ->
+                            viewModel.addPlayer(newPlayer)
                         }
                     )
                     Screen.NEW_MATCH -> NewMatchScreen(
@@ -74,16 +79,16 @@ class MainActivity : ComponentActivity() {
                             currentRivalName = if (rival.isBlank()) "VISITANTE" else rival
 
                             when {
-                                // Solo Agendar Partido -> guarda y vuelve al inicio
+                                // Solo Agendar Partido -> guarda limpio y vuelve al inicio
                                 mode.contains("Agendar", ignoreCase = true) -> {
                                     currentScreen = Screen.HOME
                                 }
-                                // Grabar Video  -> abre la cámara, y al cerrarla va al marcador
+                                // Grabar Video -> abre la cámara exclusivamente (vuelve a HOME al cerrar)
                                 mode.contains("Grabar", ignoreCase = true) -> {
-                                    cameraReturnTo = Screen.SCOREBOARD
+                                    cameraReturnTo = Screen.HOME
                                     currentScreen = Screen.CAMERA
                                 }
-                                // Solo Marcador y Puntos -> directo al marcador
+                                // Solo Marcador y Puntos -> único modo que abre el marcador
                                 else -> {
                                     currentScreen = Screen.SCOREBOARD
                                 }
@@ -93,8 +98,15 @@ class MainActivity : ComponentActivity() {
                     Screen.SCOREBOARD -> ScoreboardScreen(
                         localTeamName = viewModel.clubName.value,
                         rivalName = currentRivalName,
+                        courtPositions = viewModel.courtPositions,
                         onPointScoredByAction = { action ->
                             viewModel.recordPointForPlayerByAction(action)
+                        },
+                        onGuestPointScored = {
+                            viewModel.onGuestPointScored()
+                        },
+                        onUndoPointByAction = { action ->
+                            viewModel.undoPointForPlayerByAction(action)
                         },
                         onFinishMatch = { homePoints, guestPoints, homeSets, guestSets, attackPts, blockPts, servePts ->
                             viewModel.finishCurrentMatch(
@@ -118,13 +130,11 @@ class MainActivity : ComponentActivity() {
                                 position = newPlayerForm.position.label,
                                 isTitular = true
                             )
-                            viewModel.playerList.add(newPlayer)
-                            FirebaseService().savePlayer(newPlayer)
+                            viewModel.addPlayer(newPlayer)
                             currentScreen = Screen.HOME
                         }
                     )
                     Screen.CAMERA -> CameraScreen(
-                        // Antes volvía siempre a HOME. Ahora vuelve a donde guardamos en cameraReturnTo.
                         onClose = { currentScreen = cameraReturnTo }
                     )
                 }

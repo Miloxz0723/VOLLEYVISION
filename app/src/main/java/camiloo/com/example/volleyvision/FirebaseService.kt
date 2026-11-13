@@ -2,14 +2,49 @@ package camiloo.com.example.volleyvision
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.ListenerRegistration
+import com.google.firebase.firestore.SetOptions
 
 class FirebaseService {
 
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 
+    private var profileListener: ListenerRegistration? = null
+    private var matchesListener: ListenerRegistration? = null
+    private var playersListener: ListenerRegistration? = null
+
     private val currentUserId: String?
         get() = auth.currentUser?.uid
+
+    fun clearListeners() {
+        profileListener?.remove()
+        matchesListener?.remove()
+        playersListener?.remove()
+        profileListener = null
+        matchesListener = null
+        playersListener = null
+    }
+
+    fun logout() {
+        clearListeners()
+        auth.signOut()
+    }
+
+    fun loginUser(
+        email: String,
+        pass: String,
+        onResult: (Boolean, String?) -> Unit
+    ) {
+        clearListeners()
+        auth.signInWithEmailAndPassword(email.trim(), pass)
+            .addOnSuccessListener {
+                onResult(true, null)
+            }
+            .addOnFailureListener { e ->
+                onResult(false, e.localizedMessage)
+            }
+    }
 
     fun registerUser(
         email: String,
@@ -19,7 +54,8 @@ class FirebaseService {
         role: String,
         onResult: (Boolean, String?) -> Unit
     ) {
-        auth.createUserWithEmailAndPassword(email, pass)
+        clearListeners()
+        auth.createUserWithEmailAndPassword(email.trim(), pass)
             .addOnSuccessListener { result ->
                 val uid = result.user?.uid ?: ""
                 val userData = hashMapOf(
@@ -27,7 +63,7 @@ class FirebaseService {
                     "name" to name,
                     "club" to club,
                     "role" to role,
-                    "email" to email
+                    "email" to email.trim()
                 )
                 db.collection("users").document(uid).set(userData)
                     .addOnSuccessListener { onResult(true, null) }
@@ -39,8 +75,9 @@ class FirebaseService {
     }
 
     fun listenToUserProfile(onUpdate: (String, String, String) -> Unit) {
+        profileListener?.remove()
         val uid = currentUserId ?: return
-        db.collection("users").document(uid).addSnapshotListener { snapshot, _ ->
+        profileListener = db.collection("users").document(uid).addSnapshotListener { snapshot, _ ->
             if (snapshot != null && snapshot.exists()) {
                 val name = snapshot.getString("name") ?: "Entrenador"
                 val club = snapshot.getString("club") ?: "CV OLÍMPICO"
@@ -57,10 +94,9 @@ class FirebaseService {
             "club" to club,
             "role" to role
         )
-        db.collection("users").document(uid).set(userData, com.google.firebase.firestore.SetOptions.merge())
+        db.collection("users").document(uid).set(userData, SetOptions.merge())
     }
 
-    // Subcolección única del usuario: users/{UID}/matches
     fun saveMatch(match: MatchEvent) {
         val uid = currentUserId ?: return
         db.collection("users")
@@ -71,8 +107,9 @@ class FirebaseService {
     }
 
     fun listenToMatches(onMatchesReceived: (List<MatchEvent>) -> Unit) {
+        matchesListener?.remove()
         val uid = currentUserId ?: return
-        db.collection("users")
+        matchesListener = db.collection("users")
             .document(uid)
             .collection("matches")
             .addSnapshotListener { snapshot, _ ->
@@ -83,7 +120,6 @@ class FirebaseService {
             }
     }
 
-    // Subcolección única del usuario: users/{UID}/players
     fun savePlayer(player: PlayerMember) {
         val uid = currentUserId ?: return
         db.collection("users")
@@ -94,8 +130,9 @@ class FirebaseService {
     }
 
     fun listenToPlayers(onPlayersReceived: (List<PlayerMember>) -> Unit) {
+        playersListener?.remove()
         val uid = currentUserId ?: return
-        db.collection("users")
+        playersListener = db.collection("users")
             .document(uid)
             .collection("players")
             .addSnapshotListener { snapshot, _ ->

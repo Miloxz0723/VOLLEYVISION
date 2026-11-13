@@ -1,5 +1,6 @@
 package camiloo.com.example.volleyvision
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -18,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -25,7 +27,11 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import camiloo.com.example.volleyvision.ui.theme.*
+import java.util.UUID
+import kotlin.math.atan2
+import kotlin.math.cos
 import kotlin.math.roundToInt
+import kotlin.math.sin
 
 @Composable
 fun HomeScreen(
@@ -39,7 +45,8 @@ fun HomeScreen(
     blockEff: Float = 0f,
     receptionEff: Float = 0f,
     onNavigateToNewMatch: () -> Unit = {},
-    onNavigateToCamera: () -> Unit = {} //Ir a la cámara
+    onNavigateToCamera: () -> Unit = {},
+    onAddPlayer: (PlayerMember) -> Unit = {}
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var selectedMatchForDetails by remember { mutableStateOf<MatchEvent?>(null) }
@@ -140,7 +147,11 @@ fun HomeScreen(
                     blockEff = blockEff,
                     receptionEff = receptionEff
                 )
-                4 -> CoachClubTab(clubName = clubName, playerList = playerList)
+                4 -> CoachClubTab(
+                    clubName = clubName,
+                    playerList = playerList,
+                    onAddPlayer = onAddPlayer
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -255,6 +266,14 @@ fun CoachHomeTab(
 fun CoachTacticsTab() {
     var selectedTab by remember { mutableStateOf("K1") }
     var selectedRotation by remember { mutableStateOf("Rotación 1 (P1)") }
+    var selectedTool by remember { mutableStateOf("MOVER") } // "MOVER", "ATAQUE", "BALON"
+
+    // Posición arrastrable del balón
+    var ballOffset by remember { mutableStateOf(Offset(150f, 120f)) }
+
+    // Lista de trazos/líneas de ataque dibujados por el usuario
+    val attackLines = remember { mutableStateListOf<List<Offset>>() }
+    var currentStroke by remember { mutableStateOf<List<Offset>>(emptyList()) }
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -268,7 +287,7 @@ fun CoachTacticsTab() {
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Text(
-                    text = "● MODO EDICIÓN",
+                    text = if (selectedTool == "ATAQUE") "● DIBUJANDO ATAQUE" else "● MODO EDICIÓN",
                     color = Color(0xFF34D399),
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
@@ -341,6 +360,7 @@ fun CoachTacticsTab() {
 
         Spacer(modifier = Modifier.height(14.dp))
 
+        // CANCHA INTERACTIVA CON JUGADORES, BALÓN Y DIBUJO DE LÍNEAS
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -348,8 +368,28 @@ fun CoachTacticsTab() {
                 .background(Color(0xFFD97706), shape = RoundedCornerShape(14.dp))
                 .border(2.dp, Color.White, shape = RoundedCornerShape(14.dp))
                 .clip(RoundedCornerShape(14.dp))
+                .pointerInput(selectedTool) {
+                    if (selectedTool == "ATAQUE") {
+                        detectDragGestures(
+                            onDragStart = { startOffset ->
+                                currentStroke = listOf(startOffset)
+                            },
+                            onDrag = { change, _ ->
+                                change.consume()
+                                currentStroke = currentStroke + change.position
+                            },
+                            onDragEnd = {
+                                if (currentStroke.size > 1) {
+                                    attackLines.add(currentStroke)
+                                }
+                                currentStroke = emptyList()
+                            }
+                        )
+                    }
+                }
                 .padding(10.dp)
         ) {
+            // Red superior
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -358,16 +398,83 @@ fun CoachTacticsTab() {
                     .align(Alignment.TopCenter)
             )
 
-            TacticalPlayerToken("10", "PUNTA", initialOffset = Offset(20f, 40f))
-            TacticalPlayerToken("7", "CENTRAL", initialOffset = Offset(130f, 40f))
-            TacticalPlayerToken("4", "COLOC", initialOffset = Offset(240f, 40f))
-            TacticalPlayerToken("2", "LÍBERO", initialOffset = Offset(20f, 180f))
-            TacticalPlayerToken("9", "RECEP 2", initialOffset = Offset(130f, 220f))
-            TacticalPlayerToken("15", "OPUESTO", initialOffset = Offset(240f, 180f))
+            // Línea de 3 metros (zona de ataque)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.5.dp)
+                    .offset(y = 115.dp)
+                    .background(Color.White.copy(alpha = 0.65f))
+            )
+
+            // Canvas para dibujar las líneas de ataque con punta de flecha
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val allStrokes = attackLines + listOfNotNull(currentStroke.takeIf { it.isNotEmpty() })
+                allStrokes.forEach { stroke ->
+                    for (i in 0 until stroke.size - 1) {
+                        drawLine(
+                            color = Color(0xFF00E5FF),
+                            start = stroke[i],
+                            end = stroke[i + 1],
+                            strokeWidth = 6f,
+                            cap = StrokeCap.Round
+                        )
+                    }
+                    if (stroke.size >= 2) {
+                        val end = stroke.last()
+                        val prev = stroke[stroke.size - 2]
+                        val angle = atan2((end.y - prev.y).toDouble(), (end.x - prev.x).toDouble())
+                        val arrowLen = 22f
+                        val arrowAngle = Math.toRadians(28.0)
+
+                        val p1 = Offset(
+                            (end.x - arrowLen * cos(angle - arrowAngle)).toFloat(),
+                            (end.y - arrowLen * sin(angle - arrowAngle)).toFloat()
+                        )
+                        val p2 = Offset(
+                            (end.x - arrowLen * cos(angle + arrowAngle)).toFloat(),
+                            (end.y - arrowLen * sin(angle + arrowAngle)).toFloat()
+                        )
+                        drawLine(Color(0xFF00E5FF), end, p1, strokeWidth = 6f, cap = StrokeCap.Round)
+                        drawLine(Color(0xFF00E5FF), end, p2, strokeWidth = 6f, cap = StrokeCap.Round)
+                    }
+                }
+            }
+
+            // Fichas de jugadores según posiciones reales (4-3-2 delante, 5-6-1 atrás)
+            TacticalPlayerToken("10", "PUNTA (Z4)", initialOffset = Offset(20f, 35f))
+            TacticalPlayerToken("7", "CENTRAL (Z3)", initialOffset = Offset(130f, 35f))
+            TacticalPlayerToken("15", "OPUESTO (Z2)", initialOffset = Offset(240f, 35f))
+            TacticalPlayerToken("2", "LÍBERO (Z5)", initialOffset = Offset(20f, 195f))
+            TacticalPlayerToken("9", "PUNTA (Z6)", initialOffset = Offset(130f, 220f))
+            TacticalPlayerToken("4", "COLOC (Z1)", initialOffset = Offset(240f, 195f))
+
+            // BALÓN ARRASTRABLE EN CANCHA
+            Box(
+                modifier = Modifier
+                    .offset { IntOffset(ballOffset.x.roundToInt(), ballOffset.y.roundToInt()) }
+                    .size(34.dp)
+                    .clip(CircleShape)
+                    .background(Color.White)
+                    .border(2.dp, Color(0xFF0F172A), CircleShape)
+                    .pointerInput(Unit) {
+                        detectDragGestures { change, dragAmount ->
+                            change.consume()
+                            ballOffset = Offset(
+                                x = (ballOffset.x + dragAmount.x).coerceIn(0f, 750f),
+                                y = (ballOffset.y + dragAmount.y).coerceIn(0f, 850f)
+                            )
+                        }
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Text("🏐", fontSize = 20.sp)
+            }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
 
+        // BARRA DE HERRAMIENTAS INTERACTIVA
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -376,10 +483,20 @@ fun CoachTacticsTab() {
                 .padding(6.dp),
             horizontalArrangement = Arrangement.SpaceAround
         ) {
-            TacticalToolItem("🖐️ Mover", isSelected = true)
-            TacticalToolItem("📈 Ataque", isSelected = false)
-            TacticalToolItem("🏐 Balón", isSelected = false)
-            TacticalToolItem("⌫ Borrar", isSelected = false)
+            TacticalToolItem("🖐️ Mover", isSelected = selectedTool == "MOVER") {
+                selectedTool = "MOVER"
+            }
+            TacticalToolItem("📈 Ataque", isSelected = selectedTool == "ATAQUE") {
+                selectedTool = "ATAQUE"
+            }
+            TacticalToolItem("🏐 Balón", isSelected = selectedTool == "BALON") {
+                selectedTool = "BALON"
+                ballOffset = Offset(145f, 125f)
+            }
+            TacticalToolItem("⌫ Borrar", isSelected = false) {
+                attackLines.clear()
+                currentStroke = emptyList()
+            }
         }
 
         Spacer(modifier = Modifier.height(14.dp))
@@ -446,10 +563,11 @@ fun TacticalPlayerToken(
 }
 
 @Composable
-fun TacticalToolItem(label: String, isSelected: Boolean) {
+fun TacticalToolItem(label: String, isSelected: Boolean, onClick: () -> Unit = {}) {
     Surface(
         color = if (isSelected) Color(0xFF065F46) else Color.Transparent,
-        shape = RoundedCornerShape(8.dp)
+        shape = RoundedCornerShape(8.dp),
+        modifier = Modifier.clickable { onClick() }
     ) {
         Text(
             text = label,
@@ -462,26 +580,17 @@ fun TacticalToolItem(label: String, isSelected: Boolean) {
 }
 
 @Composable
-fun CoachClubTab(clubName: String, playerList: List<PlayerMember>) {
-
-    //ADRIAN
-    // ¿Está abierto el formulario de añadir jugador? Empieza cerrado (false).
+fun CoachClubTab(
+    clubName: String,
+    playerList: List<PlayerMember>,
+    onAddPlayer: (PlayerMember) -> Unit
+) {
     var showAddPlayer by remember { mutableStateOf(false) }
-
-    //ADRIAN
-    // Jugadores nuevos añadidos desde esta pantalla (temporal, aún no se guarda en Firebase).
-    var newPlayers by remember { mutableStateOf(listOf<PlayerMember>()) }
-
-    //ADRIAN
-    // Junta los jugadores que ya existían con los nuevos.
-    val allPlayers = playerList + newPlayers
 
     Column {
         Text("👥  PLANTILLA DEL CLUB", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
         Text("Gestión de la nómina de jugadores de $clubName", color = TextGray, fontSize = 12.sp)
 
-        //ADRIAN
-        // Botón "Añadir Jugador": al tocarlo abre el formulario.
         Spacer(modifier = Modifier.height(12.dp))
         Button(
             onClick = { showAddPlayer = true },
@@ -498,9 +607,7 @@ fun CoachClubTab(clubName: String, playerList: List<PlayerMember>) {
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        //ADRIAN
-        // Antes era playerList, ahora allPlayers para que incluya los jugadores nuevos.
-        if (allPlayers.isEmpty()) {
+        if (playerList.isEmpty()) {
             Surface(
                 color = CardBg,
                 shape = RoundedCornerShape(14.dp),
@@ -515,30 +622,31 @@ fun CoachClubTab(clubName: String, playerList: List<PlayerMember>) {
                 )
             }
         } else {
-            //ADRIAN
-            // Igual aquí: allPlayers en vez de playerList.
-            allPlayers.forEach { player ->
-                PlayerListItem(dorsal = player.dorsal, name = player.name, position = player.position, isTitular = player.isTitular)
+            playerList.forEach { player ->
+                PlayerListItem(
+                    dorsal = player.dorsal,
+                    name = player.name,
+                    position = player.position,
+                    isTitular = player.isTitular
+                )
                 Spacer(modifier = Modifier.height(8.dp))
             }
         }
     }
 
-    //ADRIAN
-    // Formulario (panel que sube desde abajo). Solo se dibuja si showAddPlayer es true.
     if (showAddPlayer) {
         AddPlayerSheet(
-            // Al cerrar el panel, lo ponemos en false.
             onDismiss = { showAddPlayer = false },
-            // Al guardar: convertimos el formulario a PlayerMember y lo agregamos a la lista temporal.
             onSave = { form ->
                 val player = PlayerMember(
+                    id = UUID.randomUUID().toString(),
                     dorsal = form.number.toString(),
                     name = form.name,
                     position = form.position.label,
                     isTitular = true
                 )
-                newPlayers = newPlayers + player
+                onAddPlayer(player)
+                showAddPlayer = false
             }
         )
     }

@@ -19,18 +19,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import camiloo.com.example.volleyvision.ui.theme.*
 
-// Modelo auxiliar para registrar la última acción y deshacer con precisión
 data class PointHistory(
     val isHome: Boolean,
-    val actionType: String // "REMATE", "BLOQUEO", "SAQUE"
+    val actionType: String
 )
 
 @Composable
 fun ScoreboardScreen(
     localTeamName: String = "CV OLÍMPICO",
     rivalName: String = "VISITANTE",
+    courtPositions: Map<Int, PlayerMember?> = emptyMap(),
     onNavigateToTactics: () -> Unit = {},
-    onPointScoredByAction: (String) -> Unit = {}, // Notifica al ViewModel qué acción suma punto
+    onPointScoredByAction: (String) -> Unit = {},
+    onGuestPointScored: () -> Unit = {},
+    onUndoPointByAction: (String) -> Unit = {},
     onFinishMatch: (
         homePoints: Int, guestPoints: Int, homeSets: Int, guestSets: Int,
         attackPts: Int, blockPts: Int, servePts: Int
@@ -51,15 +53,18 @@ fun ScoreboardScreen(
     var homeSets by remember { mutableIntStateOf(0) }
     var guestSets by remember { mutableIntStateOf(0) }
 
-    // Registros detallados por acción técnica del equipo local
     var homeAttackPoints by remember { mutableIntStateOf(0) }
     var homeBlockPoints by remember { mutableIntStateOf(0) }
     var homeServePoints by remember { mutableIntStateOf(0) }
 
-    // Historial para el botón deshacer (círculo amarillo)
     val historyStack = remember { mutableStateListOf<PointHistory>() }
 
-    // Verificación de ganador de set a los 25 puntos (con ventaja de 2)
+    // Jugadores asignados por zona táctica (Zona 4: Remate, Zona 3: Bloqueo, Zona 1: Saque)
+    val fallbackPlayer = courtPositions.values.filterNotNull().firstOrNull()
+    val attackPlayer = courtPositions[4] ?: fallbackPlayer
+    val blockPlayer = courtPositions[3] ?: fallbackPlayer
+    val servePlayer = courtPositions[1] ?: fallbackPlayer
+
     fun checkSetWinner(newHomePts: Int, newGuestPts: Int) {
         if (newHomePts >= 25 && (newHomePts - newGuestPts) >= 2) {
             homeSets++
@@ -74,7 +79,6 @@ fun ScoreboardScreen(
         }
     }
 
-    // Registra la suma de un punto según la subzona presionada
     fun addPoint(isHome: Boolean, action: String) {
         if (isHome) {
             homePoints++
@@ -83,16 +87,15 @@ fun ScoreboardScreen(
                 "BLOQUEO" -> homeBlockPoints++
                 "SAQUE" -> homeServePoints++
             }
-            // Dispara la asignación automática al jugador posicionado
             onPointScoredByAction(action)
         } else {
             guestPoints++
+            onGuestPointScored()
         }
         historyStack.add(PointHistory(isHome = isHome, actionType = action))
         checkSetWinner(homePoints, guestPoints)
     }
 
-    // Botón deshacer (círculo amarillo): Resta únicamente a la última anotación registrada
     fun undoLastPoint() {
         if (historyStack.isNotEmpty()) {
             val lastIndex = historyStack.size - 1
@@ -105,6 +108,7 @@ fun ScoreboardScreen(
                     "BLOQUEO" -> if (homeBlockPoints > 0) homeBlockPoints--
                     "SAQUE" -> if (homeServePoints > 0) homeServePoints--
                 }
+                onUndoPointByAction(lastPoint.actionType)
             } else {
                 if (guestPoints > 0) guestPoints--
             }
@@ -151,7 +155,7 @@ fun ScoreboardScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // RECUADRO AZUL - EQUIPO LOCAL (DIVIDIDO EN 3 SUBZONAS)
+            // RECUADRO AZUL - EQUIPO LOCAL
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -160,36 +164,60 @@ fun ScoreboardScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Row(modifier = Modifier.fillMaxSize()) {
-                    Box(
+                    // SUBZONA REMATE
+                    Column(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
                             .clickable { addPoint(isHome = true, action = "REMATE") }
                             .padding(6.dp),
-                        contentAlignment = Alignment.BottomCenter
+                        verticalArrangement = Arrangement.SpaceBetween,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Text(
+                            text = attackPlayer?.let { "#${it.dorsal} ${it.name.substringBefore(" ")}" } ?: "Sin jugador",
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                         Text("💥 REMATE", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
 
-                    Box(
+                    // SUBZONA BLOQUEO
+                    Column(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
                             .clickable { addPoint(isHome = true, action = "BLOQUEO") }
                             .padding(6.dp),
-                        contentAlignment = Alignment.BottomCenter
+                        verticalArrangement = Arrangement.SpaceBetween,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Text(
+                            text = blockPlayer?.let { "#${it.dorsal} ${it.name.substringBefore(" ")}" } ?: "Sin jugador",
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                         Text("🛡️ BLOQUEO", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
 
-                    Box(
+                    // SUBZONA SAQUE
+                    Column(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
                             .clickable { addPoint(isHome = true, action = "SAQUE") }
                             .padding(6.dp),
-                        contentAlignment = Alignment.BottomCenter
+                        verticalArrangement = Arrangement.SpaceBetween,
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Text(
+                            text = servePlayer?.let { "#${it.dorsal} ${it.name.substringBefore(" ")}" } ?: "Sin jugador",
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                         Text("🚀 SAQUE", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
                 }
@@ -211,7 +239,6 @@ fun ScoreboardScreen(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // MINI MARCADOR DE SETS (CÍRCULO MORADO)
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -241,12 +268,10 @@ fun ScoreboardScreen(
 
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // BOTÓN DESHACER PUNTO INDIVIDUAL (CÍRCULO AMARILLO)
                 IconButton(onClick = { undoLastPoint() }) {
                     Text("↺", fontSize = 22.sp, color = Color.White, fontWeight = FontWeight.Bold)
                 }
 
-                // CAMBIAR LADOS EN PANTALLA
                 IconButton(onClick = {
                     val tempP = homePoints; homePoints = guestPoints; guestPoints = tempP
                     val tempS = homeSets; homeSets = guestSets; guestSets = tempS
@@ -254,13 +279,12 @@ fun ScoreboardScreen(
                     Text("🔄", fontSize = 18.sp)
                 }
 
-                // IR A LA PIZARRA TÁCTICA 2D
                 IconButton(onClick = onNavigateToTactics) {
                     Text("📊", fontSize = 18.sp)
                 }
             }
 
-            // RECUADRO ROJO - EQUIPO VISITANTE (DIVIDIDO EN 3 SUBZONAS)
+            // RECUADRO ROJO - EQUIPO VISITANTE
             Box(
                 modifier = Modifier
                     .weight(1f)
