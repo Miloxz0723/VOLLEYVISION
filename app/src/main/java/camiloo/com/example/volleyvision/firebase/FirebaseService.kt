@@ -1,5 +1,7 @@
-package camiloo.com.example.volleyvision
+package camiloo.com.example.volleyvision.camiloo.com.example.volleyvision.firebase
 
+import camiloo.com.example.volleyvision.MatchEvent
+import camiloo.com.example.volleyvision.PlayerMember
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration

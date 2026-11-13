@@ -1,9 +1,13 @@
-package camiloo.com.example.volleyvision
+package camiloo.com.example.volleyvision.camiloo.com.example.volleyvision.logica
 
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import camiloo.com.example.volleyvision.MatchEvent
+import camiloo.com.example.volleyvision.MatchStatsSummary
+import camiloo.com.example.volleyvision.PlayerMember
+import camiloo.com.example.volleyvision.camiloo.com.example.volleyvision.firebase.FirebaseService
 import java.util.UUID
 
 class AppViewModel : ViewModel() {

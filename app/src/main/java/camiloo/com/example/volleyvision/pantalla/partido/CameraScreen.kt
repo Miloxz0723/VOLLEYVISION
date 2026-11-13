@@ -1,7 +1,6 @@
 package camiloo.com.example.volleyvision
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.ContentValues
 import android.content.pm.PackageManager
 import android.os.Build
