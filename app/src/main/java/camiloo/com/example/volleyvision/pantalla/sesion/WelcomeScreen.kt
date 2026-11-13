@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import camiloo.com.example.volleyvision.ui.theme.*
 
+// Pantalla inicial de presentación (Landing) con resumen de módulos y acceso a Registro o Login[cite: 14]
 @Composable
 fun WelcomeScreen(
     onNavigateToLogin: () -> Unit,
@@ -38,7 +39,7 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Insignia Superior
+            // Encabezado con insignia temática, logotipo y propuesta de valor de VolleyVision[cite: 14]
             Surface(
                 color = ButtonDarkBg,
                 shape = RoundedCornerShape(50.dp),
@@ -55,7 +56,6 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Contenedor del Logo
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -71,7 +71,6 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Título
             Row {
                 Text("Volley ", color = TextWhite, fontSize = 28.sp, fontWeight = FontWeight.Bold)
                 Text("Vision", color = NeonGreen, fontSize = 28.sp, fontWeight = FontWeight.Bold)
@@ -88,7 +87,7 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Tarjetas de funciones
+            // Tarjetas informativas que destacan las 3 funciones clave de la aplicación[cite: 14]
             FeatureCard(
                 iconSymbol = "📹",
                 title = "Grabación en tiempo Real",
@@ -113,7 +112,7 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(28.dp))
 
-            // Botón Principal: Crear Mi Cuenta
+            // Botones principales de navegación hacia Creación de Cuenta o Inicio de Sesión[cite: 14]
             Button(
                 onClick = onNavigateToRegister,
                 colors = ButtonDefaults.buttonColors(containerColor = NeonGreen),
@@ -132,7 +131,6 @@ fun WelcomeScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Botón Secundario: Iniciar Sesión
             OutlinedButton(
                 onClick = onNavigateToLogin,
                 colors = ButtonDefaults.outlinedButtonColors(
@@ -163,6 +161,7 @@ fun WelcomeScreen(
     }
 }
 
+// Componente reutilizable para mostrar cada característica destacada en la bienvenida[cite: 14]
 @Composable
 fun FeatureCard(iconSymbol: String, title: String, subtitle: String) {
     Surface(
@@ -188,7 +187,7 @@ fun FeatureCard(iconSymbol: String, title: String, subtitle: String) {
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun WelcomeScreenPreview() {
     VolleyVisionTheme {
@@ -198,4 +197,3 @@ fun WelcomeScreenPreview() {
         )
     }
 }
-

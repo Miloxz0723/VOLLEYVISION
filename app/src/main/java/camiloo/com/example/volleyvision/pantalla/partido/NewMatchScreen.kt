@@ -19,18 +19,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import camiloo.com.example.volleyvision.ui.theme.*
 
+// Pantalla de configuración de partido: permite agendar un encuentro o iniciarlo en vivo
 @Composable
 fun NewMatchScreen(
     clubName: String = "CV Olímpico",
     onBackToHome: () -> Unit = {},
-    // CAMBIO 1: ahora tiene 5 datos (el último es el modo de registro)
     onMatchCreated: (String, String, String, String, String) -> Unit = { _, _, _, _, _ -> }
 ) {
+    // Estados del formulario de creación del encuentro
     var rivalName by remember { mutableStateOf("") }
     var matchDate by remember { mutableStateOf("Hoy, 18:30h") }
     var location by remember { mutableStateOf("Pabellón Polideportivo Norte") }
-    var matchType by remember { mutableStateOf("Liga Oficial") } // "Liga Oficial", "Amistoso", "Torneo Copa"
-    var recordingMode by remember { mutableStateOf(2) } // 1: Grabar, 2: Solo Marcador, 3: Solo Agendar
+    var matchType by remember { mutableStateOf("Liga Oficial") }
+    var recordingMode by remember { mutableStateOf(2) }
     val context = LocalContext.current
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
@@ -51,7 +52,7 @@ fun NewMatchScreen(
     ) {
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Botón Volver Top Bar
+        // Barra superior de navegación
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -61,12 +62,12 @@ fun NewMatchScreen(
                 Text("← Volver", color = TextGray, fontSize = 14.sp)
             }
             Text("NUEVO ENCUENTRO", color = TextWhite, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-            Spacer(modifier = Modifier.width(48.dp)) // Equilibrio visual
+            Spacer(modifier = Modifier.width(48.dp))
         }
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        // Tarjeta Banner VS
+        // Vista previa dinámica del enfrentamiento (Equipo Local vs Rival)
         Surface(
             color = CardBg,
             shape = RoundedCornerShape(16.dp),
@@ -94,7 +95,7 @@ fun NewMatchScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 1. Nombre Rival
+        // Campos de datos logísticos: rival, fecha/hora, sede y categoría de torneo
         Text("🛡️ Nombre del Equipo Rival", color = TextWhite, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(6.dp))
         OutlinedTextField(
@@ -109,7 +110,6 @@ fun NewMatchScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 2. Fecha y Hora
         Text("📅 Fecha y Hora", color = TextWhite, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(6.dp))
         OutlinedTextField(
@@ -123,7 +123,6 @@ fun NewMatchScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 3. Lugar / Pabellón
         Text("📍 Lugar / Pabellón", color = TextWhite, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(6.dp))
         OutlinedTextField(
@@ -137,7 +136,6 @@ fun NewMatchScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 4. Tipo de Encuentro
         Text("🏆 Tipo de Encuentro", color = TextWhite, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
         Row(
@@ -151,11 +149,10 @@ fun NewMatchScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
-        // 5. Modo de Registro / Programación
+        // Selección de modalidad: Grabar video, Solo Marcador en vivo o Agendar en el calendario
         Text("🎛️ Modo de Registro", color = TextWhite, fontSize = 13.sp, fontWeight = FontWeight.Bold)
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Opción 1: Grabar Video + Anotar
         ModeOptionCard(
             title = "Grabar Video + Anotar",
             subtitle = "Scouting inteligente con IA, clips de remates",
@@ -165,7 +162,6 @@ fun NewMatchScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Opción 2: Solo Marcador y Puntos
         ModeOptionCard(
             title = "Solo Marcador y Puntos",
             subtitle = "Anotación táctica rápida sin almacenamiento de video",
@@ -175,7 +171,6 @@ fun NewMatchScreen(
 
         Spacer(modifier = Modifier.height(10.dp))
 
-        // Opción 3: Solo Agendar Partido
         ModeOptionCard(
             title = "Solo Agendar Partido",
             subtitle = "Publicar evento en la agenda de los jugadores para asistencia",
@@ -185,7 +180,7 @@ fun NewMatchScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Alineación / Jugadores Asignados
+        // Resumen informativo de la alineación táctica 5-1
         Surface(
             color = CardBg,
             shape = RoundedCornerShape(14.dp),
@@ -211,19 +206,17 @@ fun NewMatchScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Botón Dinámico de Acción
+        // Botón principal que envía los datos al ViewModel y navega al marcador o a la agenda
         Button(
             onClick = {
                 val rival = if (rivalName.isEmpty()) "Rival por Definir" else rivalName
 
-                // CAMBIO 2: convertimos el número del modo en el texto que lee MainActivity
                 val modeText = when (recordingMode) {
                     1 -> "Grabar Video + Anotar"
                     3 -> "Solo Agendar Partido"
                     else -> "Solo Marcador y Puntos"
                 }
 
-                // Llama al callback para guardar los datos ingresados en el ViewModel
                 onMatchCreated(rival, matchDate, location, matchType, modeText)
 
                 if (recordingMode == 3) {
@@ -251,7 +244,7 @@ fun NewMatchScreen(
     }
 }
 
-// Componentes Auxiliares
+// Componentes auxiliares para chips de categoría y tarjetas seleccionables de modo
 @Composable
 fun MatchTypeChip(label: String, isSelected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Surface(

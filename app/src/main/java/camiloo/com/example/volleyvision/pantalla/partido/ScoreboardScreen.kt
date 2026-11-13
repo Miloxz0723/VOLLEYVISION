@@ -19,11 +19,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import camiloo.com.example.volleyvision.ui.theme.*
 
+// Estructura de historial para permitir deshacer puntos en orden inverso (pila LIFO)
 data class PointHistory(
     val isHome: Boolean,
     val actionType: String
 )
 
+// Marcador profesional en modo horizontal (Landscape) con conteo automático de sets y atribución por zona
 @Composable
 fun ScoreboardScreen(
     localTeamName: String = "CV OLÍMPICO",
@@ -40,6 +42,7 @@ fun ScoreboardScreen(
 ) {
     val context = LocalContext.current
 
+    // Fuerza la orientación horizontal (Landscape) al entrar al marcador y la restaura al salir
     DisposableEffect(Unit) {
         val activity = context as? Activity
         activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
@@ -65,6 +68,7 @@ fun ScoreboardScreen(
     val blockPlayer = courtPositions[3] ?: fallbackPlayer
     val servePlayer = courtPositions[1] ?: fallbackPlayer
 
+    // Regla oficial FIVB: gana el set quien llegue a 25 puntos con diferencia mínima de 2
     fun checkSetWinner(newHomePts: Int, newGuestPts: Int) {
         if (newHomePts >= 25 && (newHomePts - newGuestPts) >= 2) {
             homeSets++
@@ -79,6 +83,7 @@ fun ScoreboardScreen(
         }
     }
 
+    // Suma el punto al marcador, clasifica el fundamento (Remate, Bloqueo o Saque) y actualiza al jugador
     fun addPoint(isHome: Boolean, action: String) {
         if (isHome) {
             homePoints++
@@ -96,6 +101,7 @@ fun ScoreboardScreen(
         checkSetWinner(homePoints, guestPoints)
     }
 
+    // Revierte el último punto anotado tanto en el marcador como en las estadísticas del jugador
     fun undoLastPoint() {
         if (historyStack.isNotEmpty()) {
             val lastIndex = historyStack.size - 1
@@ -123,7 +129,7 @@ fun ScoreboardScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        // ENCABEZADO SUPERIOR
+        // Encabezado con los nombres de ambos equipos
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -146,7 +152,7 @@ fun ScoreboardScreen(
             )
         }
 
-        // PANEL DE MARCADORES PRINCIPALES Y ZONAS DE PUNTOS
+        // Panel central dividido en Equipo Local (azul), Controles/Sets (centro) y Visitante (rojo)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -155,7 +161,7 @@ fun ScoreboardScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // RECUADRO AZUL - EQUIPO LOCAL
+            // Panel Local con 3 zonas táctiles (Remate, Bloqueo y Saque) y el jugador activo en cada zona
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -164,7 +170,6 @@ fun ScoreboardScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Row(modifier = Modifier.fillMaxSize()) {
-                    // SUBZONA REMATE
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -183,7 +188,6 @@ fun ScoreboardScreen(
                         Text("💥 REMATE", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
 
-                    // SUBZONA BLOQUEO
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -202,7 +206,6 @@ fun ScoreboardScreen(
                         Text("🛡️ BLOQUEO", color = Color.White.copy(alpha = 0.7f), fontSize = 10.sp, fontWeight = FontWeight.Bold)
                     }
 
-                    // SUBZONA SAQUE
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -231,7 +234,7 @@ fun ScoreboardScreen(
                 )
             }
 
-            // CONTROLES CENTRALES
+            // Columna central: marcador de sets, deshacer punto, cambio de lado y acceso a pizarra
             Column(
                 modifier = Modifier
                     .width(110.dp)
@@ -284,7 +287,7 @@ fun ScoreboardScreen(
                 }
             }
 
-            // RECUADRO ROJO - EQUIPO VISITANTE
+            // Panel Visitante con las mismas 3 zonas táctiles de anotación
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -337,7 +340,7 @@ fun ScoreboardScreen(
             }
         }
 
-        // BOTÓN INFERIOR DE FINALIZACIÓN
+        // Botón inferior que guarda el resultado final y estadísticas del partido en Firebase
         Button(
             onClick = {
                 onFinishMatch(

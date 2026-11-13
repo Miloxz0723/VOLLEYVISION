@@ -45,7 +45,7 @@ import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-
+// Pantalla de grabación de partidos en tiempo real usando CameraX y almacenamiento en galería (MediaStore)
 @Composable
 fun CameraScreen(onClose: () -> Unit) {
     val context = LocalContext.current
@@ -54,7 +54,7 @@ fun CameraScreen(onClose: () -> Unit) {
     fun isGranted(permission: String) =
         ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED
 
-    // Permisos de cámara y micrófono
+    // Verificación y solicitud en tiempo de ejecución de permisos de cámara y micrófono
     var hasPermission by remember {
         mutableStateOf(isGranted(Manifest.permission.CAMERA) && isGranted(Manifest.permission.RECORD_AUDIO))
     }
@@ -77,16 +77,16 @@ fun CameraScreen(onClose: () -> Unit) {
     var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
     var closeRequested by remember { mutableStateOf(false) }
 
-    // Cronómetro
+    // Temporizador activo mientras se graba el encuentro
     LaunchedEffect(isRecording) {
         seconds = 0
         while (isRecording) {
-            delay(1000) //Espera 1 segundo pa subir 1
-            seconds++ //Sube 1
+            delay(1000)
+            seconds++
         }
     }
 
-    // Si se sale de la pantalla grabando, se detiene y se guarda
+    // Libera la cámara y detiene la grabación de forma segura al salir de la pantalla
     DisposableEffect(Unit) {
         onDispose {
             recording?.stop()
@@ -94,6 +94,7 @@ fun CameraScreen(onClose: () -> Unit) {
         }
     }
 
+    // Configura el archivo MP4 con fecha/hora y guarda el video en Movies/VolleyVision
     fun startRecording() {
         val vc = videoCapture ?: return
         val name = "Partido_" + SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US)
@@ -103,7 +104,6 @@ fun CameraScreen(onClose: () -> Unit) {
             put(MediaStore.MediaColumns.DISPLAY_NAME, name)
             put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                // Queda en la galería, carpeta Movies/VolleyVision
                 put(MediaStore.Video.Media.RELATIVE_PATH, "Movies/VolleyVision")
             }
         }
@@ -137,24 +137,25 @@ fun CameraScreen(onClose: () -> Unit) {
         .fillMaxSize()
         .background(Color.Black)) {
 
+        // Vista previa de la cámara trasera en HD (720p) vinculada al ciclo de vida
         if (hasPermission) {
             AndroidView(
-                modifier = Modifier.fillMaxSize(), //Ocupa toda la pantalla
+                modifier = Modifier.fillMaxSize(),
                 factory = { ctx ->
                     val previewView = PreviewView(ctx)
                     val providerFuture = ProcessCameraProvider.getInstance(ctx)
                     providerFuture.addListener({
-                        val provider = providerFuture.get() //Permiso de la cámara
-                        cameraProvider = provider //Se guarda para apagarla después
+                        val provider = providerFuture.get()
+                        cameraProvider = provider
 
                         val preview = Preview.Builder().build().also {
                             it.setSurfaceProvider(previewView.surfaceProvider)
                         }
 
                         val recorder = Recorder.Builder()
-                            .setQualitySelector( //Elige Calidad
+                            .setQualitySelector(
                                 QualitySelector.from(
-                                    Quality.HD, //Estándar de 720p
+                                    Quality.HD,
                                     FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)
                                 )
                             )
@@ -164,16 +165,16 @@ fun CameraScreen(onClose: () -> Unit) {
                         provider.unbindAll()
                         provider.bindToLifecycle(
                             lifecycleOwner,
-                            CameraSelector.DEFAULT_BACK_CAMERA, //Cámara trasera
-                            preview, //Vista previa
-                            vc //Grabar
+                            CameraSelector.DEFAULT_BACK_CAMERA,
+                            preview,
+                            vc
                         )
                         videoCapture = vc
                     }, ContextCompat.getMainExecutor(ctx))
                     previewView
                 }
             )
-        } else { //Si no dan permisos
+        } else {
             Text(
                 "Necesito permiso de cámara y micrófono para grabar",
                 color = Color.White,
@@ -183,7 +184,7 @@ fun CameraScreen(onClose: () -> Unit) {
             )
         }
 
-        // Botón cerrar
+        // Controles superpuestos: botón cerrar, indicador REC con cronómetro y disparador de grabación
         Button(
             onClick = {
                 if (isRecording) {
@@ -199,7 +200,6 @@ fun CameraScreen(onClose: () -> Unit) {
                 .padding(16.dp)
         ) { Text("Cerrar", color = Color.White) }
 
-        // Cronómetro
         if (isRecording) {
             Text(
                 text = "● REC  %02d:%02d".format(seconds / 60, seconds % 60),
@@ -208,19 +208,18 @@ fun CameraScreen(onClose: () -> Unit) {
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(top = 24.dp) //Espacio a arriba
+                    .padding(top = 24.dp)
                     .background(Color(0xCCD32F2F), RoundedCornerShape(8.dp))
                     .padding(horizontal = 12.dp, vertical = 6.dp)
             )
         }
 
-        // Botón grabar
         if (hasPermission) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
-                    .padding(bottom = 32.dp) //Espacio libre al borde abajo
-                    .size(76.dp) //Tamaño Botón
+                    .padding(bottom = 32.dp)
+                    .size(76.dp)
                     .clip(CircleShape)
                     .border(4.dp, Color.White, CircleShape)
                     .clickable { if (isRecording) stopRecording() else startRecording() },
@@ -228,8 +227,8 @@ fun CameraScreen(onClose: () -> Unit) {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(if (isRecording) 28.dp else 56.dp) //Botón Rojo
-                        .clip(if (isRecording) RoundedCornerShape(6.dp) else CircleShape)  //Circulo - Cuadrado
+                        .size(if (isRecording) 28.dp else 56.dp)
+                        .clip(if (isRecording) RoundedCornerShape(6.dp) else CircleShape)
                         .background(Color(0xFFE53935))
                 )
             }

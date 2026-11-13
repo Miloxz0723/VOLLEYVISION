@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import camiloo.com.example.volleyvision.ui.theme.*
 
+// Pantalla de inicio de sesión para usuarios ya registrados (Entrenador o Jugador)[cite: 12]
 @Composable
 fun LoginScreen(
     onNavigateToRegister: () -> Unit,
@@ -28,6 +29,7 @@ fun LoginScreen(
     onNavigateToHome: () -> Unit,
     onBackToWelcome: () -> Unit
 ) {
+    // Estados reactivos del formulario y control de carga mientras responde Firebase[cite: 12]
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -52,6 +54,7 @@ fun LoginScreen(
     ) {
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Botón para regresar a la pantalla de bienvenida[cite: 12]
         TextButton(
             onClick = onBackToWelcome,
             modifier = Modifier.align(Alignment.Start)
@@ -81,6 +84,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(32.dp))
 
+        // Campos de entrada para correo electrónico y contraseña oculta[cite: 12]
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -108,6 +112,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(28.dp))
 
+        // Botón de acceso: valida campos vacíos y autentica mediante Firebase Auth[cite: 12]
         Button(
             onClick = {
                 if (email.isBlank() || password.isBlank()) {
@@ -146,6 +151,7 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Enlace directo hacia el formulario de registro de cuenta nueva[cite: 12]
         TextButton(onClick = onNavigateToRegister) {
             Text(
                 text = "¿No tienes cuenta? Regístrate aquí",

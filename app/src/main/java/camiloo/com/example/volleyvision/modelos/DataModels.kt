@@ -1,5 +1,6 @@
 package camiloo.com.example.volleyvision
 
+// Define las pantallas internas principales del flujo del entrenador
 enum class AppScreen {
     HOME,
     NEW_MATCH,
@@ -9,6 +10,7 @@ enum class AppScreen {
 }
 
 // 1. MODELO DE ESTADÍSTICAS DEL PARTIDO
+// Almacena el resumen numérico y los porcentajes de efectividad colectiva al finalizar un encuentro
 data class MatchStatsSummary(
     var attackPoints: Int = 0,
     var blockPoints: Int = 0,
@@ -23,6 +25,7 @@ data class MatchStatsSummary(
 )
 
 // 2. MODELO DE PARTIDO E HISTORIAL
+// Representa cada encuentro agendado o finalizado, incluyendo rival, fecha, marcador y estadísticas
 data class MatchEvent(
     var id: String = java.util.UUID.randomUUID().toString(),
     var rivalName: String = "",
@@ -40,6 +43,7 @@ data class MatchEvent(
 )
 
 // 3. MODELO DE ESTADÍSTICAS INDIVIDUALES DE JUGADOR
+// Acumula el rendimiento personal de cada deportista y calcula automáticamente su total de puntos
 data class PlayerStats(
     var matchesPlayed: Int = 0,
     var attackPoints: Int = 0,
@@ -53,6 +57,7 @@ data class PlayerStats(
 }
 
 // 4. MODELO DE JUGADOR CON ZONA EN CANCHA
+// Ficha completa del integrante de la plantilla: dorsal, posición táctica, zona y estadísticas
 data class PlayerMember(
     var id: String = java.util.UUID.randomUUID().toString(),
     var dorsal: String = "",
@@ -64,6 +69,7 @@ data class PlayerMember(
 )
 
 // 5. MODELO DE JUGADA TÁCTICA
+// Estructura para guardar esquemas de rotación (K1/K2) y coordenadas de cada ficha en la pizarra
 data class TacticalPlay(
     var id: String = java.util.UUID.randomUUID().toString(),
     var title: String = "",
@@ -72,6 +78,7 @@ data class TacticalPlay(
     var positions: List<PlayerTokenPosition> = emptyList()
 )
 
+// Coordenadas (X, Y) de un jugador específico dentro de una jugada táctica
 data class PlayerTokenPosition(
     var dorsal: String = "",
     var role: String = "",

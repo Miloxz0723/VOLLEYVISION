@@ -22,6 +22,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 
+// Catálogo de posiciones oficiales en voleibol disponibles para asignar al jugador
 enum class PlayerPosition(val label: String) {
     PUNTA("Punta"),
     OPUESTO("Opuesto"),
@@ -30,8 +31,9 @@ enum class PlayerPosition(val label: String) {
     LIBERO("Líbero")
 }
 
-data class NewPlayerForm( // Agrupa los datos del jugador
-    val photoUri: Uri?, // ? Significa que el dato puede ser null (no tiene foto, altura, etc)
+// Modelo temporal que agrupa los datos ingresados en el formulario de registro de jugador
+data class NewPlayerForm(
+    val photoUri: Uri?,
     val name: String,
     val number: Int,
     val position: PlayerPosition,
@@ -39,12 +41,14 @@ data class NewPlayerForm( // Agrupa los datos del jugador
     val weightKg: Double?
 )
 
-@OptIn(ExperimentalMaterial3Api::class) //Se guarda como experimental se puede decir si,
-@Composable  //puede cambiar en el futuro
+// Panel inferior desplegable (ModalBottomSheet) para inscribir un nuevo deportista en el club
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
 fun AddPlayerSheet(
     onDismiss: () -> Unit,
     onSave: (NewPlayerForm) -> Unit
-) { //Estados: Guarda lo que el usuario va escribiendo
+) {
+    // Estados reactivos de cada campo del formulario
     var photoUri by remember { mutableStateOf<Uri?>(null) }
     var name by remember { mutableStateOf("") }
     var number by remember { mutableStateOf("") }
@@ -54,25 +58,26 @@ fun AddPlayerSheet(
     var expanded by remember { mutableStateOf(false) }
     var showError by remember { mutableStateOf(false) }
 
-    val photoPicker = rememberLauncherForActivityResult( //Le dice a Android que abra la galería para la foto
+    // Selector nativo de galería de Android para cargar la foto de perfil del jugador
+    val photoPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
-    ) { uri -> photoUri = uri } //Lambda que recibe el resultado //Cambia de subir foto a la foto seleccionada
-// uri: dirección de la foto elegida
-    ModalBottomSheet( //El panel que sube desde abajo
+    ) { uri -> photoUri = uri }
+
+    ModalBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true) //Se abre completo de una vez
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ) {
         Column(
             modifier = Modifier
-                .fillMaxWidth() //Ocupa_todo el ancho
-                .verticalScroll(rememberScrollState()) //hace scroll
-                .padding(horizontal = 20.dp) //Espacio a izquierda y derecha
-                .padding(bottom = 32.dp), //Espacio abajo
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Añadir jugador", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold) //Negrita
+            Text("Añadir jugador", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
 
-            // Foto
+            // Selector circular de fotografía de perfil
             Box(
                 modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
@@ -80,9 +85,9 @@ fun AddPlayerSheet(
                 Box(
                     modifier = Modifier
                         .size(100.dp)
-                        .clip(CircleShape) //Le da la forma de circulo
+                        .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.surfaceVariant)
-                        .clickable { //Hace que se pueda tocar (al tocar se abre la galeria)
+                        .clickable {
                             photoPicker.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )
@@ -90,10 +95,10 @@ fun AddPlayerSheet(
                     contentAlignment = Alignment.Center
                 ) {
                     if (photoUri != null) {
-                        AsyncImage( //Lib Coil - Carga imagen
-                            model = photoUri, // de dónde sacar la imagen
+                        AsyncImage(
+                            model = photoUri,
                             contentDescription = "Foto del jugador",
-                            contentScale = ContentScale.Crop, // la recorta para llenar el círculo sin deformarla
+                            contentScale = ContentScale.Crop,
                             modifier = Modifier.fillMaxSize()
                         )
                     } else {
@@ -102,16 +107,18 @@ fun AddPlayerSheet(
                 }
             }
 
+            // Campo de nombre completo del deportista
             OutlinedTextField(
                 value = name,
-                onValueChange = { name = it }, // guarda el texto nuevo
+                onValueChange = { name = it },
                 label = { Text("Nombre y apellido") },
-                singleLine = true,  // una sola línea (no deja dar Enter)
-                isError = showError && name.isBlank(), // Da error si intentó guardar Y está vacío
+                singleLine = true,
+                isError = showError && name.isBlank(),
                 modifier = Modifier.fillMaxWidth()
             )
 
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {  // Row = acomoda hijos de forma horizontal.
+            // Fila con dorsal numérico (máximo 2 dígitos) y menú desplegable de posición táctica
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = number,
                     onValueChange = { number = it.filter(Char::isDigit).take(2) },
@@ -122,29 +129,29 @@ fun AddPlayerSheet(
                     modifier = Modifier.weight(1f)
                 )
 
-                ExposedDropdownMenuBox( //Caja de posiciones
-                    expanded = expanded, //True o false (si está abierto o cerrado)
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
                     onExpandedChange = { expanded = it },
-                    modifier = Modifier.weight(1f) //Reparte el tamaño del dorsal y la posición
+                    modifier = Modifier.weight(1f)
                 ) {
                     OutlinedTextField(
-                        value = position.label, //Muestra el texto con la posición
-                        onValueChange = {}, //Vacio (Cuando el usuario escribe)
-                        readOnly = true, //Solo lectura
+                        value = position.label,
+                        onValueChange = {},
+                        readOnly = true,
                         label = { Text("Posición") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) }, //La flechita gira hacia arriba cuando esstá open el menú
-                        modifier = Modifier.menuAnchor() //Hace que se abra pegado a la caja
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
+                        modifier = Modifier.menuAnchor()
                     )
                     ExposedDropdownMenu(
-                        expanded = expanded, //Se expande
-                        onDismissRequest = { expanded = false } //Si toca fuera del menú se cierra
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
                     ) {
-                        PlayerPosition.entries.forEach { option -> //Llama las op punta, lib, colo
+                        PlayerPosition.entries.forEach { option ->
                             DropdownMenuItem(
-                                text = { Text(option.label) }, //Crea fila con las opciones
+                                text = { Text(option.label) },
                                 onClick = {
-                                    position = option //Guarda la posicón elegida
-                                    expanded = false //Cierra el menú
+                                    position = option
+                                    expanded = false
                                 }
                             )
                         }
@@ -152,6 +159,7 @@ fun AddPlayerSheet(
                 }
             }
 
+            // Datos biométricos opcionales (altura y peso)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = height,
@@ -173,22 +181,23 @@ fun AddPlayerSheet(
                 )
             }
 
+            // Validación de campos obligatorios y guardado en la plantilla del club
             Button(
                 onClick = {
-                    if (name.isBlank() || number.isBlank()) { //Revisa que no estén vacios
+                    if (name.isBlank() || number.isBlank()) {
                         showError = true
                     } else {
                         onSave(
                             NewPlayerForm(
                                 photoUri = photoUri,
-                                name = name.trim(), //Quita espacios al inicio y al final
-                                number = number.toInt(), //Convierte texto a número entero
+                                name = name.trim(),
+                                number = number.toInt(),
                                 position = position,
-                                heightM = height.toDoubleOrNull(), //Texto  a decimales (Double)
-                                weightKg = weight.toDoubleOrNull() //Devuelve null
+                                heightM = height.toDoubleOrNull(),
+                                weightKg = weight.toDoubleOrNull()
                             )
                         )
-                        onDismiss() //Cierra el panel
+                        onDismiss()
                     }
                 },
                 modifier = Modifier.fillMaxWidth()

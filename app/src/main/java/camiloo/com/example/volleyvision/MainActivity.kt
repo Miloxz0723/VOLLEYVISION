@@ -9,24 +9,31 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import camiloo.com.example.volleyvision.camiloo.com.example.volleyvision.logica.AppViewModel
+import camiloo.com.example.volleyvision.pantalla.inicio.PlayerHomeScreen
 import camiloo.com.example.volleyvision.ui.theme.VolleyVisionTheme
 import java.util.UUID
 
+// Enumeración de todas las rutas/pantallas principales de la aplicación
 enum class Screen { WELCOME, LOGIN, REGISTER, HOME, NEW_MATCH, SCOREBOARD, PLAYER_HOME, ADD_PLAYER, CAMERA }
 
+// Punto de entrada principal de VolleyVision: conecta el ViewModel con las pantallas de Jetpack Compose
 class MainActivity : ComponentActivity() {
 
+    // Instancia única del ViewModel que sobrevive a rotaciones de pantalla (como el marcador horizontal)
     private val viewModel: AppViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
             VolleyVisionTheme {
+                // Estados de navegación persistentes ante cambios de configuración
                 var currentScreen by rememberSaveable { mutableStateOf(Screen.WELCOME) }
                 var currentRivalName by rememberSaveable { mutableStateOf("RIVAL") }
                 var cameraReturnTo by rememberSaveable { mutableStateOf(Screen.HOME) }
 
+                // Controlador central de navegación: renderiza cada pantalla y conecta sus eventos con el ViewModel
                 when (currentScreen) {
+                    // 1. Bienvenida y flujos de Autenticación (Login y Registro con redirección según rol)
                     Screen.WELCOME -> WelcomeScreen(
                         onNavigateToLogin = { currentScreen = Screen.LOGIN },
                         onNavigateToRegister = { currentScreen = Screen.REGISTER }
@@ -53,6 +60,8 @@ class MainActivity : ComponentActivity() {
                         },
                         onBackToWelcome = { currentScreen = Screen.WELCOME }
                     )
+
+                    // 2. Panel principal del Entrenador (estadísticas globales, partidos, pizarra y gestión de plantilla)
                     Screen.HOME -> HomeScreen(
                         clubName = viewModel.clubName.value,
                         matchesList = viewModel.matchesList,
@@ -72,6 +81,8 @@ class MainActivity : ComponentActivity() {
                             viewModel.addPlayer(newPlayer)
                         }
                     )
+
+                    // 3. Configuración de nuevo encuentro y enrutamiento según la modalidad seleccionada
                     Screen.NEW_MATCH -> NewMatchScreen(
                         clubName = viewModel.clubName.value,
                         onBackToHome = { currentScreen = Screen.HOME },
@@ -96,6 +107,8 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     )
+
+                    // 4. Marcador en vivo con rotación automática 5-1, registro de acciones y cierre del partido
                     Screen.SCOREBOARD -> ScoreboardScreen(
                         localTeamName = viewModel.clubName.value,
                         rivalName = currentRivalName,
@@ -117,27 +130,29 @@ class MainActivity : ComponentActivity() {
                             currentScreen = Screen.HOME
                         }
                     )
+
+                    // 5. Panel exclusivo del Jugador (estadísticas personales, partidos y plantilla del club)
                     Screen.PLAYER_HOME -> PlayerHomeScreen(
                         playerName = viewModel.userName.value,
-                        clubName = viewModel.clubName.value
-                    )
-                    Screen.ADD_PLAYER -> AddPlayerSheet(
-                        onDismiss = { currentScreen = Screen.HOME },
-                        onSave = { newPlayerForm ->
-                            val newPlayer = PlayerMember(
-                                id = UUID.randomUUID().toString(),
-                                name = newPlayerForm.name,
-                                dorsal = newPlayerForm.number.toString(),
-                                position = newPlayerForm.position.label,
-                                isTitular = true
-                            )
-                            viewModel.addPlayer(newPlayer)
-                            currentScreen = Screen.HOME
+                        clubName = viewModel.clubName.value,
+                        playerList = viewModel.playerList,
+                        matchesList = viewModel.matchesList,
+                        attackEff = viewModel.getAverageAttackEfficiency(),
+                        serveEff = viewModel.getAverageServeEfficiency(),
+                        blockEff = viewModel.getAverageBlockEfficiency(),
+                        receptionEff = viewModel.getAverageReceptionEfficiency(),
+                        onLogout = {
+                            viewModel.logoutAccount()
+                            currentScreen = Screen.WELCOME
                         }
                     )
+
+                    // 6. Módulo de grabación de video con CameraX
                     Screen.CAMERA -> CameraScreen(
                         onClose = { currentScreen = cameraReturnTo }
                     )
+
+                    else -> {}
                 }
             }
         }

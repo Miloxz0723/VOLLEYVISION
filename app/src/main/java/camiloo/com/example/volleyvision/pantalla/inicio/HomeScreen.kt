@@ -33,6 +33,7 @@ import kotlin.math.cos
 import kotlin.math.roundToInt
 import kotlin.math.sin
 
+// Pantalla principal del rol Entrenador con barra de navegación inferior (Inicio, Grabar, Pizarra, Estadísticas y Club)
 @Composable
 fun HomeScreen(
     clubName: String = "CV OLÍMPICO",
@@ -85,7 +86,7 @@ fun HomeScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Cabecera Top Bar
+            // Cabecera superior con el identificador de la app y el nombre del club activo
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -131,6 +132,7 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // Enrutamiento de contenido según la pestaña seleccionada en la barra inferior
             when (selectedTab) {
                 0 -> CoachHomeTab(
                     clubName = clubName,
@@ -158,7 +160,7 @@ fun HomeScreen(
         }
     }
 
-    // Modal de Detalle del Partido
+    // Ventana emergente con el resumen detallado al tocar cualquier partido del historial
     selectedMatchForDetails?.let { match ->
         MatchDetailDialog(
             match = match,
@@ -168,6 +170,7 @@ fun HomeScreen(
     }
 }
 
+// Pestaña 1 (Inicio): Botón rápido para crear partido y listado de encuentros agendados o finalizados
 @Composable
 fun CoachHomeTab(
     clubName: String,
@@ -262,6 +265,7 @@ fun CoachHomeTab(
     }
 }
 
+// Pestaña 2 (Pizarra 2D): Cancha táctica interactiva con fichas arrastrables, balón y dibujo de trayectorias
 @Composable
 fun CoachTacticsTab() {
     var selectedTab by remember { mutableStateOf("K1") }
@@ -360,7 +364,7 @@ fun CoachTacticsTab() {
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // CANCHA INTERACTIVA CON JUGADORES, BALÓN Y DIBUJO DE LÍNEAS
+        // Cancha interactiva: detecta gestos táctiles para dibujar flechas de ataque o mover jugadores
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -407,7 +411,7 @@ fun CoachTacticsTab() {
                     .background(Color.White.copy(alpha = 0.65f))
             )
 
-            // Canvas para dibujar las líneas de ataque con punta de flecha
+            // Lienzo Canvas que renderiza las flechas direccionales dibujadas por el entrenador
             Canvas(modifier = Modifier.fillMaxSize()) {
                 val allStrokes = attackLines + listOfNotNull(currentStroke.takeIf { it.isNotEmpty() })
                 allStrokes.forEach { stroke ->
@@ -449,7 +453,7 @@ fun CoachTacticsTab() {
             TacticalPlayerToken("9", "PUNTA (Z6)", initialOffset = Offset(130f, 220f))
             TacticalPlayerToken("4", "COLOC (Z1)", initialOffset = Offset(240f, 195f))
 
-            // BALÓN ARRASTRABLE EN CANCHA
+            // Balón arrastrable libremente por toda la cancha
             Box(
                 modifier = Modifier
                     .offset { IntOffset(ballOffset.x.roundToInt(), ballOffset.y.roundToInt()) }
@@ -474,7 +478,7 @@ fun CoachTacticsTab() {
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // BARRA DE HERRAMIENTAS INTERACTIVA
+        // Barra inferior de herramientas tácticas (Mover, Dibujar Ataque, Centrar Balón, Borrar)
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -514,6 +518,7 @@ fun CoachTacticsTab() {
     }
 }
 
+// Ficha circular arrastrable que representa a cada jugador dentro de la pizarra táctica
 @Composable
 fun TacticalPlayerToken(
     number: String,
@@ -579,6 +584,7 @@ fun TacticalToolItem(label: String, isSelected: Boolean, onClick: () -> Unit = {
     }
 }
 
+// Pestaña 4 (Club): Gestión de la plantilla de jugadores y modal para inscribir nuevos deportistas
 @Composable
 fun CoachClubTab(
     clubName: String,
@@ -652,6 +658,7 @@ fun CoachClubTab(
     }
 }
 
+// Pestaña 3 (Estadísticas): Tablero analítico global del equipo con métricas de efectividad
 @Composable
 fun CoachStatsTab(
     matchesPlayed: Int,
@@ -706,6 +713,7 @@ fun CoachStatsTab(
     }
 }
 
+// Componentes reutilizables de tarjetas, barras de progreso, ítems de navegación y diálogo de detalle
 @Composable
 fun StatCard(title: String, value: String, modifier: Modifier = Modifier) {
     Surface(

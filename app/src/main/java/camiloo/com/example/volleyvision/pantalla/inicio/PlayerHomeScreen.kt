@@ -1,5 +1,6 @@
-package camiloo.com.example.volleyvision
+package camiloo.com.example.volleyvision.pantalla.inicio
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,8 +18,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import camiloo.com.example.volleyvision.MatchEvent
+import camiloo.com.example.volleyvision.PlayerMember
 import camiloo.com.example.volleyvision.ui.theme.*
 
+// Pantalla principal del rol Jugador con navegación inferior entre Mi Panel, Partidos y Equipo[cite: 9]
 @Composable
 fun PlayerHomeScreen(
     playerName: String = "Jugador",
@@ -33,16 +37,23 @@ fun PlayerHomeScreen(
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
 
-    val myPlayerProfile = remember(playerName, playerList) {
-        playerList.firstOrNull { it.name.equals(playerName, ignoreCase = true) }
-            ?: playerList.firstOrNull { it.name.contains(playerName.substringBefore(" "), ignoreCase = true) }
+    // Busca dentro de la plantilla del club el perfil que coincide con el nombre del jugador autenticado[cite: 9]
+    val myPlayerProfile = playerList.firstOrNull {
+        it.name.trim().equals(playerName.trim(), ignoreCase = true)
+    } ?: playerList.firstOrNull {
+        it.name.trim().contains(playerName.trim().substringBefore(" "), ignoreCase = true)
     }
+
+    // Suma los puntos personales acumulados (remates, bloqueos y aces)[cite: 9]
+    val totalPersonalPoints = (myPlayerProfile?.stats?.attackPoints ?: 0) +
+            (myPlayerProfile?.stats?.blockPoints ?: 0) +
+            (myPlayerProfile?.stats?.acePoints ?: 0)
 
     Scaffold(
         bottomBar = {
             Surface(
                 color = CardBg,
-                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder)
+                border = BorderStroke(1.dp, CardBorder)
             ) {
                 Row(
                     modifier = Modifier
@@ -53,7 +64,7 @@ fun PlayerHomeScreen(
                 ) {
                     PlayerNavItem(icon = "🏐", label = "Mi Panel", isSelected = selectedTab == 0) { selectedTab = 0 }
                     PlayerNavItem(icon = "📅", label = "Partidos", isSelected = selectedTab == 1) { selectedTab = 1 }
-                    PlayerNavItem(icon = "📐", label = "Pizarra", isSelected = selectedTab == 2) { selectedTab = 2 }
+                    PlayerNavItem(icon = "👥", label = "Equipo", isSelected = selectedTab == 2) { selectedTab = 2 }
                 }
             }
         }
@@ -68,7 +79,7 @@ fun PlayerHomeScreen(
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            // CABECERA DEL JUGADOR
+            // Cabecera del jugador con su dorsal (#), nombre, posición táctica, club y botón de cierre de sesión[cite: 9]
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -77,7 +88,7 @@ fun PlayerHomeScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         modifier = Modifier
-                            .size(46.dp)
+                            .size(48.dp)
                             .clip(CircleShape)
                             .background(ButtonDarkBg)
                             .border(2.dp, NeonGreen, CircleShape),
@@ -94,7 +105,7 @@ fun PlayerHomeScreen(
                     Column {
                         Text(playerName, color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                         Text(
-                            text = "${myPlayerProfile?.position ?: "Jugador"} • $clubName",
+                            text = "${myPlayerProfile?.position ?: "Jugador Activo"} • $clubName",
                             color = Color(0xFF64B5F6),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.SemiBold
@@ -109,9 +120,23 @@ fun PlayerHomeScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // Contenido dinámico según la pestaña seleccionada en la barra inferior[cite: 9]
             when (selectedTab) {
+                // Pestaña 1 (Mi Panel): Estadísticas individuales, próximo partido agendado y rendimiento global del club[cite: 9]
                 0 -> {
-                    Text("MIS ESTADÍSTICAS EN PARTIDO", color = TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("MIS ESTADÍSTICAS", color = TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = "TOTAL: $totalPersonalPoints PTS",
+                            color = NeonGreen,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Black
+                        )
+                    }
                     Spacer(modifier = Modifier.height(10.dp))
 
                     Row(
@@ -140,25 +165,7 @@ fun PlayerHomeScreen(
 
                     Spacer(modifier = Modifier.height(20.dp))
 
-                    Text("RENDIMIENTO DE $clubName", color = TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(10.dp))
-
-                    Surface(
-                        color = CardBg,
-                        shape = RoundedCornerShape(14.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                            PlayerSkillBar("Ataque del Equipo", attackEff)
-                            PlayerSkillBar("Bloqueo del Equipo", blockEff)
-                            PlayerSkillBar("Recepción", receptionEff)
-                            PlayerSkillBar("Saque", serveEff)
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(20.dp))
-
+                    // Busca el encuentro pendiente más reciente programado por el entrenador[cite: 9]
                     val nextMatch = matchesList.lastOrNull { !it.isFinished }
                     Text("PRÓXIMO COMPROMISO", color = TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(8.dp))
@@ -166,7 +173,7 @@ fun PlayerHomeScreen(
                     Surface(
                         color = CardBg,
                         shape = RoundedCornerShape(16.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, if (nextMatch != null) NeonGreen else CardBorder),
+                        border = BorderStroke(1.dp, if (nextMatch != null) NeonGreen else CardBorder),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
@@ -181,20 +188,52 @@ fun PlayerHomeScreen(
                             }
                         }
                     }
+
+                    Spacer(modifier = Modifier.height(20.dp))
+
+                    Text("RENDIMIENTO DE $clubName", color = TextGray, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Surface(
+                        color = CardBg,
+                        shape = RoundedCornerShape(14.dp),
+                        border = BorderStroke(1.dp, CardBorder),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            PlayerSkillBar("Ataque del Equipo", attackEff)
+                            PlayerSkillBar("Bloqueo del Equipo", blockEff)
+                            PlayerSkillBar("Recepción", receptionEff)
+                            PlayerSkillBar("Saque", serveEff)
+                        }
+                    }
                 }
 
+                // Pestaña 2 (Partidos): Calendario completo e historial de resultados del equipo[cite: 9]
                 1 -> {
                     Text("CALENDARIO Y RESULTADOS", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.height(12.dp))
 
                     if (matchesList.isEmpty()) {
-                        Text("Aún no hay partidos registrados en el club.", color = TextGray, fontSize = 13.sp)
+                        Surface(
+                            color = CardBg,
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.dp, CardBorder),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "Aún no hay partidos registrados en el club.",
+                                color = TextGray,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
                     } else {
                         matchesList.forEach { match ->
                             Surface(
                                 color = CardBg,
                                 shape = RoundedCornerShape(14.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+                                border = BorderStroke(1.dp, CardBorder),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(bottom = 10.dp)
@@ -221,8 +260,70 @@ fun PlayerHomeScreen(
                     }
                 }
 
+                // Pestaña 3 (Equipo): Plantilla completa de compañeros inscritos en el club y sus puntos totales[cite: 9]
                 2 -> {
-                    CoachTacticsTab()
+                    Text("PLANTILLA DE $clubName", color = TextWhite, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("${playerList.size} jugadores inscritos en el club", color = TextGray, fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (playerList.isEmpty()) {
+                        Surface(
+                            color = CardBg,
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.dp, CardBorder),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = "El entrenador aún no ha registrado jugadores en la plantilla.",
+                                color = TextGray,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    } else {
+                        playerList.forEach { member ->
+                            val pts = member.stats.attackPoints + member.stats.blockPoints + member.stats.acePoints
+                            Surface(
+                                color = CardBg,
+                                shape = RoundedCornerShape(14.dp),
+                                border = BorderStroke(1.dp, if (member.isTitular) NeonGreen.copy(alpha = 0.5f) else CardBorder),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(bottom = 10.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(14.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(38.dp)
+                                                .clip(CircleShape)
+                                                .background(ButtonDarkBg),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            Text("#${member.dorsal}", color = NeonGreen, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                        }
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Column {
+                                            Text(member.name, color = TextWhite, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                                            Text(
+                                                text = "${member.position} • ${if (member.isTitular) "Titular" else "Suplente"}",
+                                                color = TextGray,
+                                                fontSize = 11.sp
+                                            )
+                                        }
+                                    }
+                                    Text("$pts pts", color = NeonGreen, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -231,12 +332,13 @@ fun PlayerHomeScreen(
     }
 }
 
+// Componentes reutilizables para tarjetas de estadísticas, barras de progreso e ítems de navegación[cite: 9]
 @Composable
 private fun PlayerStatBox(title: String, value: String, icon: String, modifier: Modifier = Modifier) {
     Surface(
         color = CardBg,
         shape = RoundedCornerShape(14.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, CardBorder),
+        border = BorderStroke(1.dp, CardBorder),
         modifier = modifier
     ) {
         Column(

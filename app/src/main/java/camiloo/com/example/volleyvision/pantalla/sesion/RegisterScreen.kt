@@ -18,12 +18,14 @@ private val BgMain = Color(0xFF0F172A)
 private val CardBg = Color(0xFF1E293B)
 private val NeonGreen = Color(0xFF236AF8)
 
+// Pantalla de registro de nuevos usuarios: permite elegir rol (Entrenador o Jugador) y vincularse a un club[cite: 13]
 @Composable
 fun RegisterScreen(
     onNavigateToLogin: () -> Unit,
     onRegisterSuccess: (String, String, String, String, String, (Boolean, String?) -> Unit) -> Unit,
     onBackToWelcome: () -> Unit
 ) {
+    // Estados de los campos de registro y mensajes de validación[cite: 13]
     var name by remember { mutableStateOf("") }
     var club by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
@@ -58,7 +60,7 @@ fun RegisterScreen(
                 fontSize = 14.sp
             )
 
-            // Nombre
+            // Campos de datos personales y de vinculación al equipo (Nombre, Club, Correo y Contraseña)[cite: 13]
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -74,7 +76,6 @@ fun RegisterScreen(
                 )
             )
 
-            // Club
             OutlinedTextField(
                 value = club,
                 onValueChange = { club = it },
@@ -90,7 +91,6 @@ fun RegisterScreen(
                 )
             )
 
-            // Correo
             OutlinedTextField(
                 value = email,
                 onValueChange = { email = it },
@@ -106,7 +106,6 @@ fun RegisterScreen(
                 )
             )
 
-            // Contraseña
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
@@ -123,7 +122,7 @@ fun RegisterScreen(
                 )
             )
 
-            // Selección de Rol
+            // Selector de rol: define si el usuario administrará el club (Entrenador) o consultará su panel (Jugador)[cite: 13]
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -149,7 +148,6 @@ fun RegisterScreen(
                 }
             }
 
-            // Mensaje de Error
             if (errorMessage.isNotEmpty()) {
                 Text(
                     text = errorMessage,
@@ -158,7 +156,7 @@ fun RegisterScreen(
                 )
             }
 
-            // Botón de Registrarse
+            // Validación de formato de correo/contraseña y creación del perfil en Firebase[cite: 13]
             Button(
                 onClick = {
                     if (email.isBlank() || password.isBlank() || name.isBlank() || club.isBlank()) {

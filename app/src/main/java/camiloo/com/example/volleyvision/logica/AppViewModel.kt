@@ -14,10 +14,12 @@ class AppViewModel : ViewModel() {
 
     private val firebaseService = FirebaseService()
 
+    // Estados reactivos globales de la sesión actual (nombre, club y rol: Entrenador o Jugador)
     val userName = mutableStateOf("Entrenador")
     val clubName = mutableStateOf("CV OLÍMPICO")
     val userRole = mutableStateOf("Entrenador")
 
+    // Listas dinámicas sincronizadas en tiempo real con Firebase para toda la interfaz
     val matchesList = mutableStateListOf<MatchEvent>()
     val playerList = mutableStateListOf<PlayerMember>()
     val courtPositions = mutableStateMapOf<Int, PlayerMember?>()
@@ -32,6 +34,7 @@ class AppViewModel : ViewModel() {
         loadUserData()
     }
 
+    // Inicia la escucha en tiempo real de perfil, partidos y plantilla del club desde Firebase
     fun loadUserData() {
         matchesList.clear()
         playerList.clear()
@@ -57,6 +60,7 @@ class AppViewModel : ViewModel() {
         }
     }
 
+    // Gestión de autenticación: Iniciar sesión, cerrar sesión y registrar cuenta nueva
     fun loginAccount(
         email: String,
         pass: String,
@@ -108,12 +112,14 @@ class AppViewModel : ViewModel() {
         firebaseService.saveUserProfile(name, club, role)
     }
 
+    // Agrega un nuevo jugador a la plantilla, actualiza la cancha y lo guarda en Firestore
     fun addPlayer(newPlayer: PlayerMember) {
         playerList.add(newPlayer)
         setupInitialCourtRotation()
         firebaseService.savePlayer(newPlayer)
     }
 
+    // Crea un nuevo partido (en vivo o agendado) y lo sincroniza en Firebase
     fun addMatch(
         rival: String,
         date: String,
@@ -143,6 +149,7 @@ class AppViewModel : ViewModel() {
         firebaseService.saveMatch(newMatch)
     }
 
+    // Cierra el partido en curso, calcula las eficiencias globales del equipo y guarda el resultado final
     fun finishCurrentMatch(
         homePoints: Int,
         guestPoints: Int,
@@ -197,6 +204,8 @@ class AppViewModel : ViewModel() {
         isHomeServing.value = false
     }
 
+    // Registra un punto individual (Saque, Bloqueo o Remate) al jugador en su zona táctica
+    // y ejecuta la rotación oficial si el equipo recupera el saque (side-out)
     fun recordPointForPlayerByAction(action: String) {
         if (courtPositions.isEmpty() && playerList.isNotEmpty()) {
             setupInitialCourtRotation()
@@ -244,6 +253,7 @@ class AppViewModel : ViewModel() {
         firebaseService.savePlayer(updatedPlayer)
     }
 
+    // Deshace el último punto sumado por acción para corregir errores en el marcador en vivo
     fun undoPointForPlayerByAction(action: String) {
         val targetZone = when (action) {
             "SAQUE" -> 1
@@ -356,6 +366,7 @@ class AppViewModel : ViewModel() {
         courtPositions[2] = z2
     }
 
+    // Métricas y promedios estadísticos del equipo mostrados en los paneles de inicio
     fun getFinishedMatchesCount(): Int = matchesList.count { it.isFinished }
 
     fun getWinPercentage(): Int {
