@@ -77,9 +77,9 @@ fun AddPlayerSheet(
         ) {
             Text("Añadir jugador", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
 
-            // Selector circular de fotografía de perfil
+            // Foto
             Box(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(), //full ancho
                 contentAlignment = Alignment.Center
             ) {
                 Box(
@@ -99,7 +99,7 @@ fun AddPlayerSheet(
                             model = photoUri,
                             contentDescription = "Foto del jugador",
                             contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize()
+                            modifier = Modifier.fillMaxSize() //full en todo el circulo
                         )
                     } else {
                         Text("📷\nSubir foto", style = MaterialTheme.typography.labelSmall)
@@ -118,33 +118,33 @@ fun AddPlayerSheet(
             )
 
             // Fila con dorsal numérico (máximo 2 dígitos) y menú desplegable de posición táctica
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) { //Row- Los pone horizontal - Deja 12 de espacio
+                OutlinedTextField( //Campo de texto
                     value = number,
-                    onValueChange = { number = it.filter(Char::isDigit).take(2) },
+                    onValueChange = { number = it.filter(Char::isDigit).take(2) }, //Solo núm y max 2
                     label = { Text("Dorsal (#)") },
                     singleLine = true,
                     isError = showError && number.isBlank(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    modifier = Modifier.weight(1f)
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), //Teclado num en celular
+                    modifier = Modifier.weight(1f) //Hace q ocupe una parte proporcional
                 )
 
-                ExposedDropdownMenuBox(
-                    expanded = expanded,
-                    onExpandedChange = { expanded = it },
-                    modifier = Modifier.weight(1f)
+                ExposedDropdownMenuBox( //Menú desplegable
+                    expanded = expanded, //true or false si está desplegable
+                    onExpandedChange = { expanded = it }, //detecta el cambio de estado
+                    modifier = Modifier.weight(1f) //la actualiza según el estado
                 ) {
                     OutlinedTextField(
-                        value = position.label,
-                        onValueChange = {},
+                        value = position.label, //posición seleccionada
+                        onValueChange = {}, //No deja modificar el texto
                         readOnly = true,
                         label = { Text("Posición") },
-                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) },
-                        modifier = Modifier.menuAnchor()
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) }, //Muestra la flechita desplegable
+                        modifier = Modifier.menuAnchor() //Lo coloca como campo de referencia al abrirlo
                     )
                     ExposedDropdownMenu(
-                        expanded = expanded,
-                        onDismissRequest = { expanded = false }
+                        expanded = expanded, //mira en que estado está el menú
+                        onDismissRequest = { expanded = false } //Lo cierra
                     ) {
                         PlayerPosition.entries.forEach { option ->
                             DropdownMenuItem(
@@ -163,16 +163,16 @@ fun AddPlayerSheet(
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
                     value = height,
-                    onValueChange = { height = it.filter { c -> c.isDigit() || c == '.' }.take(4) },
+                    onValueChange = { height = it.filter { c -> c.isDigit() || c == '.' }.take(4) }, //Comprueba q sea num y deteca el . max - 4
                     label = { Text("Altura (m)") },
                     placeholder = { Text("1.92") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f) //Ocupa una parte proporcional
                 )
                 OutlinedTextField(
                     value = weight,
-                    onValueChange = { weight = it.filter { c -> c.isDigit() || c == '.' }.take(5) },
+                    onValueChange = { weight = it.filter { c -> c.isDigit() || c == '.' }.take(5) }, //Comprueba q sea num y deteca el . - max 5
                     label = { Text("Peso (kg)") },
                     placeholder = { Text("82") },
                     singleLine = true,
@@ -190,11 +190,11 @@ fun AddPlayerSheet(
                         onSave(
                             NewPlayerForm(
                                 photoUri = photoUri,
-                                name = name.trim(),
-                                number = number.toInt(),
+                                name = name.trim(), //Guarda el nombre eliminando los espacios al principio y al final
+                                number = number.toInt(), //convierte en int
                                 position = position,
-                                heightM = height.toDoubleOrNull(),
-                                weightKg = weight.toDoubleOrNull()
+                                heightM = height.toDoubleOrNull(), //Decimal o null
+                                weightKg = weight.toDoubleOrNull() //Decimal o null
                             )
                         )
                         onDismiss()

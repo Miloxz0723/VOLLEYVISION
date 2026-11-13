@@ -139,24 +139,24 @@ fun CameraScreen(onClose: () -> Unit) {
 
         // Vista previa de la cámara trasera en HD (720p) vinculada al ciclo de vida
         if (hasPermission) {
-            AndroidView(
+            AndroidView( //Sistema de vistas de android
                 modifier = Modifier.fillMaxSize(),
-                factory = { ctx ->
+                factory = { ctx -> //Ctx - Contexto que permite acceder a recursos y servicios del sistema
                     val previewView = PreviewView(ctx)
-                    val providerFuture = ProcessCameraProvider.getInstance(ctx)
+                    val providerFuture = ProcessCameraProvider.getInstance(ctx) //solicita el proveedor de cámaras del dispositivo.
                     providerFuture.addListener({
-                        val provider = providerFuture.get()
-                        cameraProvider = provider
+                        val provider = providerFuture.get() //obtiene el provedor de antes
+                        cameraProvider = provider //Lo guarda en camera Provider
 
-                        val preview = Preview.Builder().build().also {
-                            it.setSurfaceProvider(previewView.surfaceProvider)
+                        val preview = Preview.Builder().build().also { //also: permite ejecutar instrucciones
+                            it.setSurfaceProvider(previewView.surfaceProvider) //indica donde se mostrará el contenido de la cámara.
                         }
 
-                        val recorder = Recorder.Builder()
-                            .setQualitySelector(
+                        val recorder = Recorder.Builder() //Se configura la grabación
+                            .setQualitySelector( //Se selecciona la calidad
                                 QualitySelector.from(
-                                    Quality.HD,
-                                    FallbackStrategy.lowerQualityOrHigherThan(Quality.SD)
+                                    Quality.HD, //720p
+                                    FallbackStrategy.lowerQualityOrHigherThan(Quality.SD) //por si no permite la calidad
                                 )
                             )
                             .build()
@@ -227,8 +227,8 @@ fun CameraScreen(onClose: () -> Unit) {
             ) {
                 Box(
                     modifier = Modifier
-                        .size(if (isRecording) 28.dp else 56.dp)
-                        .clip(if (isRecording) RoundedCornerShape(6.dp) else CircleShape)
+                        .size(if (isRecording) 28.dp else 56.dp)  // tamaño
+                        .clip(if (isRecording) RoundedCornerShape(6.dp) else CircleShape) ////Circulo y cuadrado al grabar
                         .background(Color(0xFFE53935))
                 )
             }
